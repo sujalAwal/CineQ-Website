@@ -1,0 +1,107 @@
+import { Component, Input } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
+import { Movie } from '../../../core/models/movie.model';
+
+@Component({
+  selector: 'app-movie-card',
+  standalone: true,
+  imports: [CommonModule, RouterLink],
+  template: `
+    <a [routerLink]="['/movie', movie.id]" 
+       class="card card-hover group block cursor-pointer">
+      <!-- Poster Container -->
+      <div class="relative aspect-[2/3] overflow-hidden">
+        <!-- Movie Poster -->
+        <img [src]="movie.posterUrl" 
+             [alt]="movie.title"
+             class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+             loading="lazy">
+        
+        <!-- Gradient Overlay -->
+        <div class="absolute inset-0 bg-gradient-to-t from-dark-950 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+        
+        <!-- Rating Badge -->
+        @if (movie.rating > 0) {
+          <div class="absolute top-3 right-3 flex items-center space-x-1 bg-dark-900/90 backdrop-blur-sm px-2 py-1 rounded-lg">
+            <svg class="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+            </svg>
+            <span class="text-sm font-semibold text-white">{{ movie.rating.toFixed(1) }}</span>
+          </div>
+        }
+
+        <!-- Coming Soon Badge -->
+        @if (movie.status === 'coming-soon') {
+          <div class="absolute top-3 left-3">
+            <span class="badge bg-accent-500 text-white">Coming Soon</span>
+          </div>
+        }
+
+        <!-- Hover Overlay with Play Button -->
+        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <div class="w-16 h-16 rounded-full bg-primary-500/90 backdrop-blur-sm flex items-center justify-center transform scale-50 group-hover:scale-100 transition-transform duration-300">
+            <svg class="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card Content -->
+      <div class="p-4">
+        <!-- Title -->
+        <h3 class="font-semibold text-white text-lg mb-1 truncate group-hover:text-primary-400 transition-colors duration-300">
+          {{ movie.title }}
+        </h3>
+
+        <!-- Tagline -->
+        @if (movie.tagline) {
+          <p class="text-gray-400 text-sm mb-3 truncate">{{ movie.tagline }}</p>
+        }
+
+        <!-- Genre Tags -->
+        <div class="flex flex-wrap gap-2 mb-3">
+          @for (genre of movie.genres.slice(0, 2); track genre) {
+            <span class="badge badge-primary text-xs">{{ genre }}</span>
+          }
+          @if (movie.genres.length > 2) {
+            <span class="badge bg-dark-700 text-gray-400 text-xs">+{{ movie.genres.length - 2 }}</span>
+          }
+        </div>
+
+        <!-- Meta Info -->
+        <div class="flex items-center justify-between text-sm text-gray-400">
+          <div class="flex items-center space-x-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>{{ formatDuration(movie.duration) }}</span>
+          </div>
+          @if (movie.status === 'coming-soon') {
+            <span class="text-accent-400">{{ formatReleaseDate(movie.releaseDate) }}</span>
+          } @else {
+            <span class="text-primary-400 font-medium">Book Now →</span>
+          }
+        </div>
+      </div>
+    </a>
+  `,
+  styles: []
+})
+export class MovieCardComponent {
+  @Input({ required: true }) movie!: Movie;
+
+  formatDuration(minutes: number): string {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours}h ${mins}m`;
+  }
+
+  formatReleaseDate(date: Date): string {
+    return new Date(date).toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  }
+}

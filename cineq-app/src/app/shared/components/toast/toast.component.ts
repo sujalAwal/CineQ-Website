@@ -1,0 +1,86 @@
+import { Component, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { ToastService, Toast } from '../../../core/services/toast.service';
+
+@Component({
+  selector: 'app-toast',
+  standalone: true,
+  imports: [CommonModule],
+  template: `
+    <div class="fixed top-20 right-4 z-50 space-y-3 max-w-sm w-full">
+      @for (toast of toastService.toasts(); track toast.id) {
+        <div class="card p-4 animate-slide-down flex items-start space-x-3"
+             [class]="getToastClass(toast.type)">
+          <!-- Icon -->
+          <div class="flex-shrink-0">
+            @switch (toast.type) {
+              @case ('success') {
+                <div class="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                  <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                  </svg>
+                </div>
+              }
+              @case ('error') {
+                <div class="w-8 h-8 rounded-full bg-red-500/20 flex items-center justify-center">
+                  <svg class="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                </div>
+              }
+              @case ('warning') {
+                <div class="w-8 h-8 rounded-full bg-yellow-500/20 flex items-center justify-center">
+                  <svg class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                  </svg>
+                </div>
+              }
+              @case ('info') {
+                <div class="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+                  <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                </div>
+              }
+            }
+          </div>
+
+          <!-- Content -->
+          <div class="flex-1 min-w-0">
+            <p class="text-sm font-medium text-white">{{ toast.title }}</p>
+            @if (toast.message) {
+              <p class="mt-1 text-sm text-gray-400">{{ toast.message }}</p>
+            }
+          </div>
+
+          <!-- Close Button -->
+          <button (click)="toastService.dismiss(toast.id)" 
+                  class="flex-shrink-0 text-gray-400 hover:text-white transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+      }
+    </div>
+  `,
+  styles: []
+})
+export class ToastComponent {
+  toastService = inject(ToastService);
+
+  getToastClass(type: Toast['type']): string {
+    switch (type) {
+      case 'success':
+        return 'border-green-500/50';
+      case 'error':
+        return 'border-red-500/50';
+      case 'warning':
+        return 'border-yellow-500/50';
+      case 'info':
+        return 'border-blue-500/50';
+      default:
+        return '';
+    }
+  }
+}
