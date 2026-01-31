@@ -3,7 +3,7 @@ name: Cine Q Deployment
 on:
   push:
     branches:
-      - main
+      - develop
 
 jobs:
   deploy:
