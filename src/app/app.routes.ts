@@ -29,6 +29,23 @@ export const routes: Routes = [
     title: 'Book Tickets - CineQ'
   },
   {
+    path: 'profile',
+    loadComponent: () => import('./features/profile/profile.component').then(m => m.ProfileComponent),
+    canActivate: [authGuard],
+    title: 'My Profile - CineQ'
+  },
+  {
+    path: 'bookings',
+    loadComponent: () => import('./features/my-bookings/my-bookings.component').then(m => m.MyBookingsComponent),
+    canActivate: [authGuard],
+    title: 'My Bookings - CineQ'
+  },
+  {
+    path: 'customer-portal',
+    loadComponent: () => import('./features/customer-portal/customer-portal.component').then(m => m.CustomerPortalComponent),
+    title: 'Customer Portal - CineQ'
+  },
+  {
     path: '**',
     redirectTo: '',
     pathMatch: 'full'

@@ -1,0 +1,342 @@
+import { Component, inject, signal } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { AuthService } from '../../core/services/auth.service';
+import { ToastService } from '../../core/services/toast.service';
+import { User } from '../../core/models/user.model';
+
+@Component({
+  selector: 'app-profile',
+  standalone: true,
+  imports: [CommonModule, RouterLink, FormsModule],
+  template: `
+    <div class="min-h-screen bg-dark-950 pt-24 pb-16">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-8">
+          <h1 class="text-3xl md:text-4xl font-display font-bold text-white mb-2">
+            My Profile
+          </h1>
+          <p class="text-gray-400">Manage your account information and preferences</p>
+        </div>
+
+        @if (user()) {
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Profile Card -->
+            <div class="lg:col-span-1">
+              <div class="card p-6 text-center">
+                <!-- Avatar -->
+                <div class="relative inline-block mb-4">
+                  <img 
+                    [src]="user()?.avatarUrl || defaultAvatar" 
+                    alt="Profile avatar"
+                    class="w-32 h-32 rounded-full border-4 border-primary-500 object-cover mx-auto"
+                  >
+                  <button 
+                    class="absolute bottom-0 right-0 p-2 bg-primary-600 rounded-full hover:bg-primary-700 transition-colors"
+                    aria-label="Change avatar"
+                    (click)="changeAvatar()"
+                  >
+                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                  </button>
+                </div>
+
+                <h2 class="text-xl font-bold text-white mb-1">{{ user()?.fullName }}</h2>
+                <p class="text-gray-400 text-sm mb-4">{{ user()?.email }}</p>
+
+                <!-- Member Since -->
+                <div class="bg-dark-800 rounded-lg p-3 mb-4">
+                  <p class="text-gray-500 text-xs uppercase tracking-wide mb-1">Member Since</p>
+                  <p class="text-white font-medium">{{ user()?.createdAt | date:'MMMM yyyy' }}</p>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="space-y-2">
+                  <a routerLink="/bookings" class="btn-secondary w-full flex items-center justify-center space-x-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/>
+                    </svg>
+                    <span>View Bookings</span>
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <!-- Profile Details -->
+            <div class="lg:col-span-2 space-y-6">
+              <!-- Personal Information -->
+              <div class="card p-6">
+                <div class="flex items-center justify-between mb-6">
+                  <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+                    <svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                    </svg>
+                    <span>Personal Information</span>
+                  </h3>
+                  @if (!isEditing()) {
+                    <button 
+                      (click)="startEditing()"
+                      class="text-primary-500 hover:text-primary-400 text-sm font-medium flex items-center space-x-1"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+                      </svg>
+                      <span>Edit</span>
+                    </button>
+                  }
+                </div>
+
+                @if (!isEditing()) {
+                  <!-- View Mode -->
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <p class="text-gray-500 text-sm mb-1">Full Name</p>
+                      <p class="text-white font-medium">{{ user()?.fullName }}</p>
+                    </div>
+                    <div>
+                      <p class="text-gray-500 text-sm mb-1">Email Address</p>
+                      <p class="text-white font-medium">{{ user()?.email }}</p>
+                    </div>
+                    <div>
+                      <p class="text-gray-500 text-sm mb-1">Phone Number</p>
+                      <p class="text-white font-medium">{{ user()?.phone || 'Not provided' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-gray-500 text-sm mb-1">User ID</p>
+                      <p class="text-gray-400 font-mono text-sm">{{ user()?.id }}</p>
+                    </div>
+                  </div>
+                } @else {
+                  <!-- Edit Mode -->
+                  <form (ngSubmit)="saveChanges()" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label for="fullName" class="block text-gray-400 text-sm mb-2">Full Name</label>
+                        <input 
+                          type="text" 
+                          id="fullName"
+                          [(ngModel)]="editForm.fullName"
+                          name="fullName"
+                          class="input-field"
+                          required
+                        >
+                      </div>
+                      <div>
+                        <label for="email" class="block text-gray-400 text-sm mb-2">Email Address</label>
+                        <input 
+                          type="email" 
+                          id="email"
+                          [(ngModel)]="editForm.email"
+                          name="email"
+                          class="input-field"
+                          required
+                        >
+                      </div>
+                      <div class="md:col-span-2">
+                        <label for="phone" class="block text-gray-400 text-sm mb-2">Phone Number</label>
+                        <input 
+                          type="tel" 
+                          id="phone"
+                          [(ngModel)]="editForm.phone"
+                          name="phone"
+                          class="input-field"
+                          placeholder="+1 (555) 000-0000"
+                        >
+                      </div>
+                    </div>
+                    <div class="flex items-center space-x-3 pt-4">
+                      <button type="submit" class="btn-primary">
+                        Save Changes
+                      </button>
+                      <button type="button" (click)="cancelEditing()" class="btn-ghost">
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                }
+              </div>
+
+              <!-- Security -->
+              <div class="card p-6">
+                <h3 class="text-lg font-bold text-white flex items-center space-x-2 mb-6">
+                  <svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                  </svg>
+                  <span>Security</span>
+                </h3>
+
+                <div class="space-y-4">
+                  <div class="flex items-center justify-between p-4 bg-dark-800 rounded-lg">
+                    <div>
+                      <p class="text-white font-medium">Password</p>
+                      <p class="text-gray-500 text-sm">Last changed: Never</p>
+                    </div>
+                    <button 
+                      (click)="changePassword()"
+                      class="text-primary-500 hover:text-primary-400 text-sm font-medium"
+                    >
+                      Change Password
+                    </button>
+                  </div>
+
+                  <div class="flex items-center justify-between p-4 bg-dark-800 rounded-lg">
+                    <div>
+                      <p class="text-white font-medium">Two-Factor Authentication</p>
+                      <p class="text-gray-500 text-sm">Add extra security to your account</p>
+                    </div>
+                    <span class="badge">Coming Soon</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Preferences -->
+              <div class="card p-6">
+                <h3 class="text-lg font-bold text-white flex items-center space-x-2 mb-6">
+                  <svg class="w-5 h-5 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  </svg>
+                  <span>Preferences</span>
+                </h3>
+
+                <div class="space-y-4">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-white font-medium">Email Notifications</p>
+                      <p class="text-gray-500 text-sm">Receive booking confirmations and updates</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" class="sr-only peer" checked>
+                      <div class="w-11 h-6 bg-dark-700 rounded-full peer peer-checked:bg-primary-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                    </label>
+                  </div>
+
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-white font-medium">SMS Notifications</p>
+                      <p class="text-gray-500 text-sm">Get text updates about your bookings</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" class="sr-only peer">
+                      <div class="w-11 h-6 bg-dark-700 rounded-full peer peer-checked:bg-primary-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                    </label>
+                  </div>
+
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <p class="text-white font-medium">Promotional Offers</p>
+                      <p class="text-gray-500 text-sm">Receive special offers and discounts</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input type="checkbox" class="sr-only peer" checked>
+                      <div class="w-11 h-6 bg-dark-700 rounded-full peer peer-checked:bg-primary-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Danger Zone -->
+              <div class="card p-6 border border-red-500/20">
+                <h3 class="text-lg font-bold text-red-500 flex items-center space-x-2 mb-4">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                  </svg>
+                  <span>Danger Zone</span>
+                </h3>
+                <p class="text-gray-400 text-sm mb-4">
+                  Once you delete your account, there is no going back. Please be certain.
+                </p>
+                <button 
+                  (click)="deleteAccount()"
+                  class="px-4 py-2 bg-red-500/10 text-red-500 border border-red-500/30 rounded-lg hover:bg-red-500/20 transition-colors"
+                >
+                  Delete Account
+                </button>
+              </div>
+            </div>
+          </div>
+        } @else {
+          <!-- Loading or No User -->
+          <div class="text-center py-16">
+            <p class="text-gray-400">Loading profile...</p>
+          </div>
+        }
+      </div>
+    </div>
+  `,
+  styles: []
+})
+export class ProfileComponent {
+  private authService = inject(AuthService);
+  private toastService = inject(ToastService);
+
+  readonly user = this.authService.user;
+  readonly defaultAvatar = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default';
+
+  isEditing = signal(false);
+  editForm = {
+    fullName: '',
+    email: '',
+    phone: ''
+  };
+
+  startEditing(): void {
+    const currentUser = this.user();
+    if (currentUser) {
+      this.editForm = {
+        fullName: currentUser.fullName,
+        email: currentUser.email,
+        phone: currentUser.phone || ''
+      };
+      this.isEditing.set(true);
+    }
+  }
+
+  cancelEditing(): void {
+    this.isEditing.set(false);
+  }
+
+  saveChanges(): void {
+    // TODO: Implement API call to save profile changes
+    const currentUser = this.user();
+    if (currentUser) {
+      const updatedUser: User = {
+        ...currentUser,
+        fullName: this.editForm.fullName,
+        email: this.editForm.email,
+        phone: this.editForm.phone
+      };
+      
+      // Update localStorage (simulating API update)
+      localStorage.setItem('cineq_user', JSON.stringify(updatedUser));
+      
+      // Reload the page to reflect changes (in real app, update signal directly)
+      this.toastService.success('Profile Updated', 'Your profile has been updated successfully.');
+      this.isEditing.set(false);
+      
+      // Force page reload to update user signal
+      window.location.reload();
+    }
+  }
+
+  changeAvatar(): void {
+    // TODO: Implement avatar upload
+    this.toastService.info('Coming Soon', 'Avatar upload will be available soon.');
+  }
+
+  changePassword(): void {
+    // TODO: Implement password change modal/flow
+    this.toastService.info('Coming Soon', 'Password change will be available soon.');
+  }
+
+  deleteAccount(): void {
+    // TODO: Implement account deletion with confirmation
+    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+      this.toastService.info('Coming Soon', 'Account deletion will be available soon.');
+    }
+  }
+}

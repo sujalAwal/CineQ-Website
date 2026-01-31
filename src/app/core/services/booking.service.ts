@@ -34,12 +34,11 @@ export class BookingService {
     return this.totalAmount() + this.convenienceFee() + this.taxes();
   });
 
-  // Available payment methods
+  // Available payment methods (Nepali payment service providers)
   readonly paymentMethods: PaymentMethod[] = [
-    { id: 'card', type: 'card', name: 'Credit/Debit Card', icon: 'credit-card' },
-    { id: 'upi', type: 'upi', name: 'UPI', icon: 'smartphone' },
-    { id: 'netbanking', type: 'netbanking', name: 'Net Banking', icon: 'building-library' },
-    { id: 'wallet', type: 'wallet', name: 'Digital Wallet', icon: 'wallet' }
+    { id: 'esewa', type: 'wallet', name: 'eSewa', icon: 'wallet' },
+    { id: 'khalti', type: 'wallet', name: 'Khalti', icon: 'smartphone' },
+    { id: 'connectips', type: 'netbanking', name: 'ConnectIPS', icon: 'building-library' }
   ];
 
   constructor() {

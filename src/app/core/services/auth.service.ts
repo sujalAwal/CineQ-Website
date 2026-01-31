@@ -1,15 +1,29 @@
-import { Injectable, signal, computed, effect } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
 import { User, LoginCredentials, SignupData, AuthResponse } from '../models/user.model';
+import { ToastService } from './toast.service';
+
+// Default credentials (temporary until backend is ready)
+const DEFAULT_CREDENTIALS = {
+  email: 'user@cineq.com',
+  password: 'CineQ@2026'
+};
+
+const MAX_LOGIN_ATTEMPTS = 10;
+const LOCKOUT_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
+  private toastService = inject(ToastService);
+  
   private userSignal = signal<User | null>(null);
   private tokenSignal = signal<string | null>(null);
   private loadingSignal = signal<boolean>(false);
   private showLoginModalSignal = signal<boolean>(false);
   private showSignupModalSignal = signal<boolean>(false);
+  private loginAttemptsSignal = signal<number>(0);
+  private lockoutUntilSignal = signal<number | null>(null);
 
   // Public readonly signals
   readonly user = this.userSignal.asReadonly();
@@ -17,12 +31,22 @@ export class AuthService {
   readonly loading = this.loadingSignal.asReadonly();
   readonly showLoginModal = this.showLoginModalSignal.asReadonly();
   readonly showSignupModal = this.showSignupModalSignal.asReadonly();
+  readonly loginAttempts = this.loginAttemptsSignal.asReadonly();
+  readonly lockoutUntil = this.lockoutUntilSignal.asReadonly();
   
   readonly isAuthenticated = computed(() => !!this.userSignal() && !!this.tokenSignal());
+  readonly isLockedOut = computed(() => {
+    const lockoutTime = this.lockoutUntilSignal();
+    return lockoutTime ? Date.now() < lockoutTime : false;
+  });
+  readonly remainingAttempts = computed(() => {
+    return Math.max(0, MAX_LOGIN_ATTEMPTS - this.loginAttemptsSignal());
+  });
 
   constructor() {
     // Check for existing session on init
     this.loadStoredSession();
+    this.loadLoginAttempts();
   }
 
   /**
@@ -40,6 +64,66 @@ export class AuthService {
     } catch (error) {
       console.error('Error loading stored session:', error);
       this.clearSession();
+    }
+  }
+
+  /**
+   * Load login attempts from localStorage
+   */
+  private loadLoginAttempts(): void {
+    try {
+      const attempts = localStorage.getItem('cineq_login_attempts');
+      const lockoutUntil = localStorage.getItem('cineq_lockout_until');
+      
+      if (attempts) {
+        this.loginAttemptsSignal.set(parseInt(attempts, 10));
+      }
+      if (lockoutUntil) {
+        const lockoutTime = parseInt(lockoutUntil, 10);
+        if (Date.now() < lockoutTime) {
+          this.lockoutUntilSignal.set(lockoutTime);
+          const remainingMinutes = Math.ceil((lockoutTime - Date.now()) / 60000);
+          this.toastService.warning(
+            'Account Temporarily Locked',
+            `Too many failed attempts. Try again in ${remainingMinutes} minute(s).`
+          );
+        } else {
+          // Lockout expired, reset
+          this.resetLoginAttempts();
+        }
+      }
+    } catch (error) {
+      console.error('Error loading login attempts:', error);
+    }
+  }
+
+  /**
+   * Reset login attempts
+   */
+  private resetLoginAttempts(): void {
+    this.loginAttemptsSignal.set(0);
+    this.lockoutUntilSignal.set(null);
+    localStorage.removeItem('cineq_login_attempts');
+    localStorage.removeItem('cineq_lockout_until');
+  }
+
+  /**
+   * Increment login attempts
+   */
+  private incrementLoginAttempts(): void {
+    const newAttempts = this.loginAttemptsSignal() + 1;
+    this.loginAttemptsSignal.set(newAttempts);
+    localStorage.setItem('cineq_login_attempts', newAttempts.toString());
+
+    if (newAttempts >= MAX_LOGIN_ATTEMPTS) {
+      const lockoutUntil = Date.now() + LOCKOUT_DURATION;
+      this.lockoutUntilSignal.set(lockoutUntil);
+      localStorage.setItem('cineq_lockout_until', lockoutUntil.toString());
+      
+      this.toastService.error(
+        'Account Locked',
+        'Too many failed login attempts. Please try again after 10 minutes.'
+      );
     }
   }
 
@@ -99,9 +183,20 @@ export class AuthService {
 
   /**
    * Login with credentials
-   * Simulates API call - replace with actual HTTP request
+   * Uses default credentials until backend API is ready
    */
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
+    // Check if account is locked
+    if (this.isLockedOut()) {
+      const lockoutTime = this.lockoutUntilSignal();
+      const remainingMinutes = lockoutTime ? Math.ceil((lockoutTime - Date.now()) / 60000) : 10;
+      this.toastService.error(
+        'Account Locked',
+        `Too many failed attempts. Try again in ${remainingMinutes} minute(s).`
+      );
+      throw new Error('Account temporarily locked');
+    }
+
     this.loadingSignal.set(true);
     
     try {
@@ -111,13 +206,31 @@ export class AuthService {
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Simulate successful login
+      // Validate credentials against default
+      if (credentials.email !== DEFAULT_CREDENTIALS.email || 
+          credentials.password !== DEFAULT_CREDENTIALS.password) {
+        this.incrementLoginAttempts();
+        
+        const remaining = this.remainingAttempts();
+        if (remaining > 0) {
+          this.toastService.error(
+            'Login Failed',
+            `Invalid email or password. ${remaining} attempt(s) remaining.`
+          );
+        }
+        
+        throw new Error('Invalid credentials');
+      }
+
+      // Successful login - reset attempts
+      this.resetLoginAttempts();
+
       const mockResponse: AuthResponse = {
         user: {
-          id: 'user_1',
-          fullName: 'John Doe',
+          id: 'user_' + Date.now(),
+          fullName: 'CineQ User',
           email: credentials.email,
-          phone: '+1234567890',
+          phone: '9876543210',
           avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + credentials.email,
           createdAt: new Date()
         },
@@ -137,10 +250,11 @@ export class AuthService {
         sessionStorage.setItem('cineq_token', mockResponse.token);
       }
 
+      this.toastService.success('Welcome Back!', 'Login successful');
       this.closeLoginModal();
       return mockResponse;
     } catch (error) {
-      throw new Error('Login failed. Please check your credentials.');
+      throw error;
     } finally {
       this.loadingSignal.set(false);
     }
@@ -181,6 +295,7 @@ export class AuthService {
       localStorage.setItem('cineq_user', JSON.stringify(mockResponse.user));
       localStorage.setItem('cineq_token', mockResponse.token);
 
+      this.toastService.success('Welcome!', 'Account created successfully');
       this.closeSignupModal();
       return mockResponse;
     } catch (error) {
@@ -195,6 +310,7 @@ export class AuthService {
    */
   logout(): void {
     this.clearSession();
+    this.toastService.info('Logged Out', 'You have been logged out successfully');
   }
 
   /**

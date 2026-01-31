@@ -1,0 +1,362 @@
+<div class="portal-container">
+  <aside class="portal-sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-logo">🚀</div>
+      <div>
+        <div class="brand-title">Customer Portal</div>
+        <div class="brand-subtitle">Enterprise Edition</div>
+      </div>
+    </div>
+
+    @for (group of navGroups; track group.title) {
+      <nav class="nav-section">
+        <div class="nav-title">{{ group.title }}</div>
+        @for (item of group.items; track item.id) {
+          <button
+            type="button"
+            class="nav-item"
+            [class.active]="activeSection() === item.id"
+            (click)="setActiveSection(item.id)"
+          >
+            <span class="nav-icon">{{ item.icon }}</span>
+            <span>{{ item.label }}</span>
+          </button>
+        }
+      </nav>
+    }
+  </aside>
+
+  <header class="portal-header">
+    <div class="header-title">
+      <h1>{{ pageTitle() }}</h1>
+    </div>
+
+    <div class="header-search">
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Search across your data, settings, and history..."
+        name="searchTerm"
+        [(ngModel)]="searchTermModel"
+        (ngModelChange)="setSearchTerm($event)"
+      />
+    </div>
+
+    <div class="user-menu">
+      <div class="notification-bell">
+        <span>🔔</span>
+        <span class="notification-count">3</span>
+      </div>
+      <div class="user-avatar">JD</div>
+    </div>
+  </header>
+
+  <main class="portal-main">
+    <section class="portal-section" [class.hidden]="activeSection() !== 'dashboard'">
+      <div class="dashboard-grid">
+        @for (card of statCards(); track card.label) {
+          <div class="stat-card">
+            <div class="stat-value">{{ card.value }}</div>
+            <div class="stat-label">{{ card.label }}</div>
+            <div class="stat-trend" [class.trend-up]="card.direction === 'up'" [class.trend-down]="card.direction === 'down'">
+              {{ card.trend }}
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="streaming-grid">
+        <div class="stream-card">
+          <div class="card-header">
+            <div>
+              <h4>Real-time Stream</h4>
+              <p>Live metrics refreshed every second</p>
+            </div>
+            <span class="badge badge-live">LIVE</span>
+          </div>
+          <div class="live-metric-list">
+            @for (metric of liveMetricEntries(); track metric.key) {
+              <div class="live-metric">
+                <div class="metric-label">{{ metric.label }}</div>
+                <div class="metric-value">{{ metric.value }}</div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="stream-card analytics-card">
+          <div class="card-header">
+            <div>
+              <h4>Analytics Insights</h4>
+              <p>Interaction batches captured by the advanced engine</p>
+            </div>
+          </div>
+          <div class="insights-list">
+            @for (insight of analyticsInsights() | slice:0:4; track insight.id) {
+              <div class="insight-item">
+                <div class="insight-summary">{{ insight.summary }}</div>
+                <div class="insight-detail">{{ insight.detail }}</div>
+                <div class="insight-time">{{ insight.timestamp | date: 'shortTime' }}</div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="stream-card background-card">
+          <div class="card-header">
+            <div>
+              <h4>Background Jobs</h4>
+              <p>Automated processors keeping data fresh</p>
+            </div>
+          </div>
+          <div class="background-list">
+            @for (job of backgroundJobs(); track job.id) {
+              <div class="job-row">
+                <div>
+                  <div class="job-label">{{ job.label }}</div>
+                  <div class="job-interval">{{ job.intervalLabel }}</div>
+                </div>
+                <div class="job-meta">
+                  <span class="job-status" [class.job-online]="job.status === 'running'">{{ job.status | titlecase }}</span>
+                  <div class="job-times">
+                    <span>Last: {{ job.lastRun }}</span>
+                    <span>Next: {{ job.nextRun }}</span>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="data-table-container mb-8">
+        <div class="table-header">
+          <div class="table-title">Recent Activity</div>
+          <div class="table-actions">
+            <button type="button" class="btn btn-secondary">Export</button>
+            <button type="button" class="btn btn-primary">Filter</button>
+          </div>
+        </div>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date &amp; Time</th>
+              <th>Activity Type</th>
+              <th>Description</th>
+              <th>IP Address</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (activity of filteredActivities(); track activity.id) {
+              <tr>
+                <td>{{ activity.timestamp | date: 'medium' }}</td>
+                <td>
+                  <span class="badge">{{ activity.type.replace('_', ' ') }}</span>
+                </td>
+                <td>{{ activity.description }}</td>
+                <td>{{ activity.ipAddress }}</td>
+                <td>
+                  <span class="status" [class.status-success]="activity.status === 'success'" [class.status-error]="activity.status === 'failed'">
+                    {{ activity.status | uppercase }}
+                  </span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="form-container">
+        <h3>Quick Actions</h3>
+        <div class="quick-actions">
+          <button type="button" class="btn btn-primary" (click)="openModalDialog('password')">Change Password</button>
+          <button type="button" class="btn btn-secondary" (click)="openModalDialog('profile')">Update Profile</button>
+          <button type="button" class="btn btn-secondary" (click)="openModalDialog('preferences')">Edit Preferences</button>
+          <button type="button" class="btn btn-secondary" (click)="exportAllData()" [disabled]="isExporting()">
+            {{ isExporting() ? 'Exporting…' : 'Export All Data' }}
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <section class="portal-section" [class.hidden]="activeSection() !== 'profile'">
+      <div class="form-container">
+        <h3>Personal Information</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">First Name</label>
+            <input type="text" class="form-input" name="firstName" [(ngModel)]="profileForm.firstName" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Last Name</label>
+            <input type="text" class="form-input" name="lastName" [(ngModel)]="profileForm.lastName" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Email Address</label>
+            <input type="email" class="form-input" name="email" [(ngModel)]="profileForm.email" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone Number</label>
+            <input type="tel" class="form-input" name="phone" [(ngModel)]="profileForm.phone" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Bio</label>
+          <textarea class="form-input" rows="4" name="bio" [(ngModel)]="profileForm.bio"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-primary" (click)="updateProfile()">Save Changes</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="portal-section" [class.hidden]="activeSection() !== 'security'">
+      <div class="form-container">
+        <h3>Security Settings</h3>
+        <div class="form-group">
+          <label class="form-label">Two-Factor Authentication</label>
+          <div class="two-factor">
+            <div>
+              <div class="label-strong">Status: Enabled</div>
+              <p>Two-factor authentication adds an extra layer of security to your account.</p>
+            </div>
+            <button type="button" class="btn btn-secondary">Manage 2FA</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Active Sessions</label>
+          <div class="sessions-list">
+            @for (session of sessions(); track session.id) {
+              <div class="session-card">
+                <div>
+                  <div class="session-device">{{ session.device }} <span *ngIf="session.isCurrent">(Current)</span></div>
+                  <div class="session-meta">{{ session.location }} • {{ session.ipAddress }}</div>
+                  <div class="session-time">Last activity: {{ session.lastActivity | date: 'short' }}</div>
+                </div>
+                <button type="button" class="btn btn-secondary" (click)="revokeSession(session.id)">Revoke</button>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Password Strength</label>
+          <div class="progress-track">
+            <div class="progress-value" style="width: 85%"></div>
+          </div>
+          <p>Your password is strong. Last changed 30 days ago.</p>
+        </div>
+
+        <button type="button" class="btn btn-primary" (click)="openModalDialog('password')">Change Password</button>
+      </div>
+    </section>
+
+    @for (item of navGroups | slice:1; track $index) {
+      @for (nav of item.items; track nav.id) {
+        <section class="portal-section" [class.hidden]="activeSection() !== nav.id">
+          <div class="placeholder-card">
+            <h3>{{ nav.label }}</h3>
+            <p>Comprehensive tooling for {{ nav.label.toLowerCase() }} lives here. Add integrations, configurations, and analytics tailored to this area.</p>
+          </div>
+        </section>
+      }
+    }
+  </main>
+</div>
+
+@if (toast()) {
+  <div class="toast" [class.toast-success]="toast()?.type === 'success'" [class.toast-error]="toast()?.type === 'error'">
+    {{ toast()?.message }}
+  </div>
+}
+
+@if (openModal()) {
+  <div class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">
+          @switch (openModal()) {
+            @case ('password') { Change Password }
+            @case ('profile') { Update Profile }
+            @case ('preferences') { Edit Preferences }
+          }
+        </div>
+        <button type="button" class="modal-close" (click)="closeModal()">×</button>
+      </div>
+      <div class="modal-body">
+        @switch (openModal()) {
+          @case ('password') {
+            <div class="form-group">
+              <label class="form-label">Current Password</label>
+              <input type="password" class="form-input" name="currentPassword" [(ngModel)]="passwordForm.current" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">New Password</label>
+              <input type="password" class="form-input" name="newPassword" [(ngModel)]="passwordForm.next" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Confirm New Password</label>
+              <input type="password" class="form-input" name="confirmPassword" [(ngModel)]="passwordForm.confirm" />
+            </div>
+          }
+          @case ('profile') {
+            <div class="form-group">
+              <label class="form-label">Theme</label>
+              <select class="form-select" name="theme" [(ngModel)]="profileForm.theme">
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+                <option value="system">System</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Language</label>
+              <select class="form-select" name="language" [(ngModel)]="profileForm.language">
+                <option value="en-US">English (US)</option>
+                <option value="en-GB">English (UK)</option>
+                <option value="fr-FR">French</option>
+              </select>
+            </div>
+          }
+          @case ('preferences') {
+            <div class="form-group">
+              <label class="form-label">Notifications</label>
+              <label class="checkbox">
+                <input type="checkbox" name="emailNotifications" [(ngModel)]="preferencesForm.emailNotifications" /> Email
+              </label>
+              <label class="checkbox">
+                <input type="checkbox" name="pushNotifications" [(ngModel)]="preferencesForm.pushNotifications" /> Push
+              </label>
+              <label class="checkbox">
+                <input type="checkbox" name="smsNotifications" [(ngModel)]="preferencesForm.smsNotifications" /> SMS
+              </label>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Timezone</label>
+              <select class="form-select" name="timezone" [(ngModel)]="preferencesForm.timezone">
+                <option value="America/New_York">America/New_York</option>
+                <option value="Europe/London">Europe/London</option>
+                <option value="Asia/Tokyo">Asia/Tokyo</option>
+              </select>
+            </div>
+          }
+        }
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+        @switch (openModal()) {
+          @case ('password') {
+            <button type="button" class="btn btn-primary" (click)="changePassword()">Update Password</button>
+          }
+          @case ('profile') {
+            <button type="button" class="btn btn-primary" (click)="updateProfile()">Save</button>
+          }
+          @case ('preferences') {
+            <button type="button" class="btn btn-primary" (click)="updatePreferences()">Save</button>
+          }
+        }
+      </div>
+    </div>
+  </div>
+}
