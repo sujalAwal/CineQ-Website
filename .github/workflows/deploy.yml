@@ -3,7 +3,7 @@ name: Cine Q Deployment
 on:
   push:
     branches:
-      - main  # Change this to 'master' if that is your branch name
+      - main
 
 jobs:
   deploy:
@@ -13,25 +13,43 @@ jobs:
       deployments: write
 
     steps:
-      - name: Checkout code
+      - name: 🚀 Starting Deployment
+        run: echo "Starting the deployment process for Cine Q at $(date)"
+
+      - name: 📥 Checking out code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: ⚙️ Setting up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install dependencies
-        run: npm install
+      - name: 📦 Installing Dependencies
+        run: |
+          echo "::group::npm install logs"
+          echo "Running npm install to fetch libraries..."
+          npm install
+          echo "Dependencies installed successfully."
+          echo "::endgroup::"
 
-      - name: Build Angular App
-        run: npm run build -- --configuration production
+      - name: 🏗️ Building Angular App
+        run: |
+          echo "::group::Angular Build Process"
+          echo "Building 'cine-q' for Production..."
+          npm run build -- --configuration production
+          echo "Build complete. Checking output directory..."
+          ls -R dist/cine-q/browser
+          echo "::endgroup::"
 
-      - name: Publish to Cloudflare Pages
+      - name: ☁️ Publishing to Cloudflare Pages
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: 'cine-q' # Give your project a name here
-          directory: 'dist/cine-q/browser' # Check your angular.json for this path!
+          projectName: 'cine-q'
+          directory: 'dist/cine-q/browser'
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+        # This action automatically logs its own progress (uploading, etc.)
+
+      - name: ✅ Deployment Finished
+        run: echo "Cine Q is now live on Cloudflare!"
