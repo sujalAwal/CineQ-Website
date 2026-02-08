@@ -40,23 +40,42 @@ import { ToastService } from '../../../core/services/toast.service';
 
           <!-- Form -->
           <form [formGroup]="signupForm" (ngSubmit)="onSubmit()" class="p-6 space-y-4">
-            <!-- Full Name -->
-            <div>
-              <label for="fullName" class="block text-sm font-medium text-gray-300 mb-2">Full Name</label>
-              <div class="relative">
-                <input id="fullName" 
-                       type="text" 
-                       formControlName="fullName"
-                       class="input-field pl-10"
-                       placeholder="John Doe"
-                       [class.border-red-500]="showError('fullName')">
-                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                </svg>
+            <!-- First & Last Name -->
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label for="firstName" class="block text-sm font-medium text-gray-300 mb-2">First Name</label>
+                <div class="relative">
+                  <input id="firstName" 
+                         type="text" 
+                         formControlName="firstName"
+                         class="input-field pl-10"
+                         placeholder="John"
+                         [class.border-red-500]="showError('firstName')">
+                  <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                  </svg>
+                </div>
+                @if (showError('firstName')) {
+                  <p class="mt-1 text-sm text-red-400">First name is required</p>
+                }
               </div>
-              @if (showError('fullName')) {
-                <p class="mt-1 text-sm text-red-400">Full name is required</p>
-              }
+              <div>
+                <label for="lastName" class="block text-sm font-medium text-gray-300 mb-2">Last Name</label>
+                <div class="relative">
+                  <input id="lastName" 
+                         type="text" 
+                         formControlName="lastName"
+                         class="input-field pl-10"
+                         placeholder="Doe"
+                         [class.border-red-500]="showError('lastName')">
+                  <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                  </svg>
+                </div>
+                @if (showError('lastName')) {
+                  <p class="mt-1 text-sm text-red-400">Last name is required</p>
+                }
+              </div>
             </div>
 
             <!-- Email -->
@@ -143,7 +162,7 @@ import { ToastService } from '../../../core/services/toast.service';
                 </div>
               }
               @if (showError('password')) {
-                <p class="mt-1 text-sm text-red-400">Password must be at least 8 characters</p>
+                <p class="mt-1 text-sm text-red-400">Password must be at least 6 characters</p>
               }
             </div>
 
@@ -267,10 +286,11 @@ export class SignupModalComponent {
   showConfirmPassword = signal(false);
 
   signupForm: FormGroup = this.fb.group({
-    fullName: ['', [Validators.required, Validators.minLength(2)]],
+    firstName: ['', [Validators.required, Validators.minLength(2)]],
+    lastName: ['', [Validators.required, Validators.minLength(2)]],
     email: ['', [Validators.required, Validators.email]],
-    phone: ['', [Validators.required, Validators.pattern(/^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/)]],
-    password: ['', [Validators.required, Validators.minLength(8)]],
+    phone: ['', [Validators.pattern(/^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/)]],
+    password: ['', [Validators.required, Validators.minLength(6)]],
     confirmPassword: ['', [Validators.required]],
     acceptTerms: [false, [Validators.requiredTrue]]
   }, { validators: this.passwordMatchValidator });
@@ -362,10 +382,9 @@ export class SignupModalComponent {
     try {
       const { confirmPassword, acceptTerms, ...signupData } = this.signupForm.value;
       await this.authService.signup(signupData);
-      this.toastService.success('Account Created!', 'Welcome to CineQ. Start exploring movies!');
       this.signupForm.reset();
     } catch (error) {
-      this.toastService.error('Signup Failed', 'Please try again later.');
+      // Error already handled by AuthService toast
     }
   }
 }

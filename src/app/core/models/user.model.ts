@@ -1,10 +1,26 @@
+export type Gender = 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';
+
 export interface User {
   id: string;
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
-  phone: string;
+  phone?: string;
+  dateOfBirth?: string;
+  gender?: Gender;
+  loyaltyPoints: number;
+  isEmailVerified: boolean;
+  role: string;
   avatarUrl?: string;
   createdAt: Date;
+}
+
+/**
+ * Helper to get display name from user object
+ */
+export function getUserFullName(user: User | null | undefined): string {
+  if (!user) return '';
+  return `${user.firstName} ${user.lastName}`.trim();
 }
 
 export interface LoginCredentials {
@@ -14,14 +30,28 @@ export interface LoginCredentials {
 }
 
 export interface SignupData {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
-  phone: string;
   password: string;
+  phone?: string;
+  dateOfBirth?: string;
+  gender?: Gender;
 }
 
 export interface AuthResponse {
-  user: User;
   token: string;
-  expiresIn: number;
+  type: string;
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  loyaltyPoints: number;
+  isEmailVerified: boolean;
+  role: string;
+}
+
+export interface ApiErrorResponse {
+  success: false;
+  message: string;
 }

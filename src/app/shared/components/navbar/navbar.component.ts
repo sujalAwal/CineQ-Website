@@ -1,7 +1,8 @@
-import { Component, inject, signal, HostListener } from '@angular/core';
+import { Component, inject, signal, HostListener, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { getUserFullName } from '../../../core/models/user.model';
 
 @Component({
   selector: 'app-navbar',
@@ -73,7 +74,7 @@ import { AuthService } from '../../../core/services/auth.service';
                   <img [src]="authService.user()?.avatarUrl || 'https://api.dicebear.com/7.x/avataaars/svg?seed=default'" 
                        alt="User avatar" 
                        class="w-8 h-8 rounded-full border-2 border-primary-500">
-                  <span class="text-white font-medium max-w-[100px] truncate">{{ authService.user()?.fullName }}</span>
+                  <span class="text-white font-medium max-w-[100px] truncate">{{ authService.userFullName() }}</span>
                   <svg class="w-4 h-4 text-gray-400 transition-transform duration-300" 
                        [class.rotate-180]="showUserMenu()"
                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -85,7 +86,7 @@ import { AuthService } from '../../../core/services/auth.service';
                 @if (showUserMenu()) {
                   <div class="absolute right-0 mt-2 w-56 rounded-xl glass shadow-xl animate-slide-down">
                     <div class="p-4 border-b border-dark-700">
-                      <p class="text-white font-medium truncate">{{ authService.user()?.fullName }}</p>
+                      <p class="text-white font-medium truncate">{{ authService.userFullName() }}</p>
                       <p class="text-sm text-gray-400 truncate">{{ authService.user()?.email }}</p>
                     </div>
                     <div class="py-2">
@@ -164,7 +165,7 @@ import { AuthService } from '../../../core/services/auth.service';
                 <div class="flex items-center space-x-3 py-2">
                   <img [src]="authService.user()?.avatarUrl" alt="User" class="w-10 h-10 rounded-full border-2 border-primary-500">
                   <div>
-                    <p class="text-white font-medium">{{ authService.user()?.fullName }}</p>
+                    <p class="text-white font-medium">{{ authService.userFullName() }}</p>
                     <p class="text-sm text-gray-400">{{ authService.user()?.email }}</p>
                   </div>
                 </div>
@@ -258,8 +259,8 @@ export class NavbarComponent {
     this.authService.openSignupModal();
   }
 
-  logout(): void {
-    this.authService.logout();
+  async logout(): Promise<void> {
+    await this.authService.logout();
     this.closeUserMenu();
     this.closeMobileMenu();
   }

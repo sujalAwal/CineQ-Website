@@ -210,10 +210,9 @@ export class LoginModalComponent {
 
     try {
       await this.authService.login(this.loginForm.value);
-      this.toastService.success('Welcome back!', 'You have successfully logged in.');
       this.loginForm.reset();
     } catch (error) {
-      this.toastService.error('Login Failed', 'Please check your credentials and try again.');
+      // Error already handled by AuthService toast
     }
   }
 }

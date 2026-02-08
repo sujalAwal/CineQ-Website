@@ -4,7 +4,7 @@ import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { ToastService } from '../../core/services/toast.service';
-import { User } from '../../core/models/user.model';
+import { User, getUserFullName } from '../../core/models/user.model';
 
 @Component({
   selector: 'app-profile',
@@ -45,7 +45,7 @@ import { User } from '../../core/models/user.model';
                   </button>
                 </div>
 
-                <h2 class="text-xl font-bold text-white mb-1">{{ user()?.fullName }}</h2>
+                <h2 class="text-xl font-bold text-white mb-1">{{ userDisplayName }}</h2>
                 <p class="text-gray-400 text-sm mb-4">{{ user()?.email }}</p>
 
                 <!-- Member Since -->
@@ -94,8 +94,12 @@ import { User } from '../../core/models/user.model';
                   <!-- View Mode -->
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <p class="text-gray-500 text-sm mb-1">Full Name</p>
-                      <p class="text-white font-medium">{{ user()?.fullName }}</p>
+                      <p class="text-gray-500 text-sm mb-1">First Name</p>
+                      <p class="text-white font-medium">{{ user()?.firstName }}</p>
+                    </div>
+                    <div>
+                      <p class="text-gray-500 text-sm mb-1">Last Name</p>
+                      <p class="text-white font-medium">{{ user()?.lastName }}</p>
                     </div>
                     <div>
                       <p class="text-gray-500 text-sm mb-1">Email Address</p>
@@ -115,12 +119,23 @@ import { User } from '../../core/models/user.model';
                   <form (ngSubmit)="saveChanges()" class="space-y-4">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label for="fullName" class="block text-gray-400 text-sm mb-2">Full Name</label>
+                        <label for="firstName" class="block text-gray-400 text-sm mb-2">First Name</label>
                         <input 
                           type="text" 
-                          id="fullName"
-                          [(ngModel)]="editForm.fullName"
-                          name="fullName"
+                          id="firstName"
+                          [(ngModel)]="editForm.firstName"
+                          name="firstName"
+                          class="input-field"
+                          required
+                        >
+                      </div>
+                      <div>
+                        <label for="lastName" class="block text-gray-400 text-sm mb-2">Last Name</label>
+                        <input 
+                          type="text" 
+                          id="lastName"
+                          [(ngModel)]="editForm.lastName"
+                          name="lastName"
                           class="input-field"
                           required
                         >
@@ -136,7 +151,7 @@ import { User } from '../../core/models/user.model';
                           required
                         >
                       </div>
-                      <div class="md:col-span-2">
+                      <div>
                         <label for="phone" class="block text-gray-400 text-sm mb-2">Phone Number</label>
                         <input 
                           type="tel" 
@@ -277,9 +292,14 @@ export class ProfileComponent {
   readonly user = this.authService.user;
   readonly defaultAvatar = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default';
 
+  get userDisplayName(): string {
+    return getUserFullName(this.user());
+  }
+
   isEditing = signal(false);
   editForm = {
-    fullName: '',
+    firstName: '',
+    lastName: '',
     email: '',
     phone: ''
   };
@@ -288,7 +308,8 @@ export class ProfileComponent {
     const currentUser = this.user();
     if (currentUser) {
       this.editForm = {
-        fullName: currentUser.fullName,
+        firstName: currentUser.firstName,
+        lastName: currentUser.lastName,
         email: currentUser.email,
         phone: currentUser.phone || ''
       };
@@ -306,7 +327,8 @@ export class ProfileComponent {
     if (currentUser) {
       const updatedUser: User = {
         ...currentUser,
-        fullName: this.editForm.fullName,
+        firstName: this.editForm.firstName,
+        lastName: this.editForm.lastName,
         email: this.editForm.email,
         phone: this.editForm.phone
       };
