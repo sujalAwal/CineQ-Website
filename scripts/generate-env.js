@@ -87,9 +87,21 @@ fs.writeFileSync(envFilePath, environmentContent, 'utf8');
 console.log('✅ Generated environment.prod.ts from environment variables');
 console.log('📝 File written to:', envFilePath);
 
-// Log which env vars were used (without exposing sensitive values)
-console.log('\\n📋 Environment variables status:');
+// Log which env vars were used (without exposing full sensitive values)
+console.log('\n📋 Environment variables status:');
+
+// Helper to mask URL but show domain for debugging
+const maskUrl = (url) => {
+  try {
+    const parsed = new URL(url);
+    return `${parsed.protocol}//${parsed.host}/***`;
+  } catch {
+    return url ? '[invalid url]' : '[empty]';
+  }
+};
+
 console.log('  API_BASE_URL:', process.env.API_BASE_URL ? '✓ Set' : '✗ Using default');
+console.log('    → Using:', maskUrl(env.API_BASE_URL));
 console.log('  AUTH_TOKEN_KEY:', process.env.AUTH_TOKEN_KEY ? '✓ Set' : '✗ Using default');
 console.log('  APP_NAME:', process.env.APP_NAME ? '✓ Set' : '✗ Using default');
 console.log('  FEATURE_ENABLE_GOOGLE_AUTH:', env.FEATURE_ENABLE_GOOGLE_AUTH);

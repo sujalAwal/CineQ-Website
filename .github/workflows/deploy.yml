@@ -34,7 +34,7 @@ jobs:
 
       - name: 🏗️ Building Angular App
         env:
-          API_BASE_URL: ${{ vars.API_BASE_URL || 'http://localhost:8080/api' }}
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
         run: |
           echo "::group::Angular Build Process"
           echo "Generating environment configuration..."
