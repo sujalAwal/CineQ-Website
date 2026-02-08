@@ -5,8 +5,7 @@
  * Usage:
  *   node scripts/generate-env.js
  *
- * On Render / Docker, set the environment variables before running this script.
- * Locally it falls back to safe defaults so the build never breaks.
+ *
  */
 
 const fs = require('fs');
