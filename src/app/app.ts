@@ -17,24 +17,6 @@ import { ToastComponent } from './shared/components/toast/toast.component';
     SignupModalComponent,
     ToastComponent
   ],
-  template: `
-    <div class="min-h-screen flex flex-col bg-dark-950">
-      <app-navbar />
-      
-      <main class="flex-1">
-        <router-outlet />
-      </main>
-      
-      <app-footer />
-      
-      <!-- Global Modals -->
-      <app-login-modal />
-      <app-signup-modal />
-      
-      <!-- Toast Notifications -->
-      <app-toast />
-    </div>
-  `,
-  styles: []
+  templateUrl: './app.html'
 })
 export class App {}
