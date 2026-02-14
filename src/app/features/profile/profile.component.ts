@@ -92,34 +92,35 @@ import { User, getUserFullName } from '../../core/models/user.model';
 
                 @if (!isEditing()) {
                   <!-- View Mode -->
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
                       <p class="text-gray-500 text-sm mb-1">First Name</p>
                       <p class="text-white font-medium">{{ user()?.firstName }}</p>
                     </div>
                     <div>
+                      <p class="text-gray-500 text-sm mb-1">Middle Name</p>
+                      <p class="text-white font-medium">{{ user()?.middleName || 'Not provided' }}</p>
+                    </div>
+                    <div>
                       <p class="text-gray-500 text-sm mb-1">Last Name</p>
                       <p class="text-white font-medium">{{ user()?.lastName }}</p>
                     </div>
-                    <div>
+                    <div class="md:col-span-2">
                       <p class="text-gray-500 text-sm mb-1">Email Address</p>
                       <p class="text-white font-medium">{{ user()?.email }}</p>
                     </div>
                     <div>
                       <p class="text-gray-500 text-sm mb-1">Phone Number</p>
-                      <p class="text-white font-medium">{{ user()?.phone || 'Not provided' }}</p>
+                      <p class="text-white font-medium">{{ user()?.phone || 'NA' }}</p>
                     </div>
-                    <div>
-                      <p class="text-gray-500 text-sm mb-1">User ID</p>
-                      <p class="text-gray-400 font-mono text-sm">{{ user()?.id }}</p>
-                    </div>
+                    
                   </div>
                 } @else {
                   <!-- Edit Mode -->
                   <form (ngSubmit)="saveChanges()" class="space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
-                        <label for="firstName" class="block text-gray-400 text-sm mb-2">First Name</label>
+                        <label for="firstName" class="block text-gray-400 text-sm mb-2">First Name <span class="text-red-500">*</span></label>
                         <input 
                           type="text" 
                           id="firstName"
@@ -130,7 +131,17 @@ import { User, getUserFullName } from '../../core/models/user.model';
                         >
                       </div>
                       <div>
-                        <label for="lastName" class="block text-gray-400 text-sm mb-2">Last Name</label>
+                        <label for="middleName" class="block text-gray-400 text-sm mb-2">Middle Name</label>
+                        <input 
+                          type="text" 
+                          id="middleName"
+                          [(ngModel)]="editForm.middleName"
+                          name="middleName"
+                          class="input-field"
+                        >
+                      </div>
+                      <div>
+                        <label for="lastName" class="block text-gray-400 text-sm mb-2">Last Name <span class="text-red-500">*</span></label>
                         <input 
                           type="text" 
                           id="lastName"
@@ -141,7 +152,7 @@ import { User, getUserFullName } from '../../core/models/user.model';
                         >
                       </div>
                       <div>
-                        <label for="email" class="block text-gray-400 text-sm mb-2">Email Address</label>
+                        <label for="email" class="block text-gray-400 text-sm mb-2">Email Address <span class="text-red-500">*</span></label>
                         <input 
                           type="email" 
                           id="email"
@@ -299,6 +310,7 @@ export class ProfileComponent {
   isEditing = signal(false);
   editForm = {
     firstName: '',
+    middleName: '',
     lastName: '',
     email: '',
     phone: ''
@@ -309,6 +321,7 @@ export class ProfileComponent {
     if (currentUser) {
       this.editForm = {
         firstName: currentUser.firstName,
+        middleName: currentUser.middleName || '',
         lastName: currentUser.lastName,
         email: currentUser.email,
         phone: currentUser.phone || ''
@@ -328,20 +341,17 @@ export class ProfileComponent {
       const updatedUser: User = {
         ...currentUser,
         firstName: this.editForm.firstName,
+        middleName: this.editForm.middleName || undefined,
         lastName: this.editForm.lastName,
         email: this.editForm.email,
         phone: this.editForm.phone
       };
       
-      // Update localStorage (simulating API update)
-      localStorage.setItem('cineq_user', JSON.stringify(updatedUser));
+      // Update user data via auth service (handles storage)
+      this.authService.updateUserData(updatedUser);
       
-      // Reload the page to reflect changes (in real app, update signal directly)
       this.toastService.success('Profile Updated', 'Your profile has been updated successfully.');
       this.isEditing.set(false);
-      
-      // Force page reload to update user signal
-      window.location.reload();
     }
   }
 

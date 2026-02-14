@@ -24,52 +24,82 @@
           </svg>
         </div>
         <h2 id="signup-title" class="text-2xl font-display font-bold text-white mb-2">Create Account</h2>
-        <p class="text-gray-400">Join CineQ and start booking movies</p>
       </div>
 
       <!-- Form -->
       <form [formGroup]="signupForm" (ngSubmit)="onSubmit()" class="p-6 space-y-4">
-        <!-- First & Last Name -->
-        <div class="grid grid-cols-2 gap-3">
+        <!-- First, Middle & Last Name -->
+        <div class="grid grid-cols-3 gap-3">
           <div>
-            <label for="firstName" class="block text-sm font-medium text-gray-300 mb-2">First Name</label>
+            <label for="firstName" class="block text-sm font-medium text-gray-300 mb-2">First Name <span class="text-red-500">*</span></label>
             <div class="relative">
               <input id="firstName"
                      type="text"
                      formControlName="firstName"
                      class="input-field pl-10"
-                     placeholder="John"
+                     placeholder="Alice"
                      [class.border-red-500]="showError('firstName')">
               <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
               </svg>
             </div>
             @if (showError('firstName')) {
-              <p class="mt-1 text-sm text-red-400">First name is required</p>
+              @if (signupForm.get('firstName')?.errors?.['required']) {
+                <p class="mt-1 text-sm text-red-400">First name is required</p>
+              } @else if (signupForm.get('firstName')?.errors?.['minlength']) {
+                <p class="mt-1 text-sm text-red-400">Min 2 characters</p>
+              } @else if (signupForm.get('firstName')?.errors?.['pattern']) {
+                <p class="mt-1 text-sm text-red-400">Letters only (A-Z)</p>
+              }
             }
           </div>
           <div>
-            <label for="lastName" class="block text-sm font-medium text-gray-300 mb-2">Last Name</label>
+            <label for="middleName" class="block text-sm font-medium text-gray-300 mb-2">Middle Name</label>
+            <div class="relative">
+              <input id="middleName"
+                     type="text"
+                     formControlName="middleName"
+                     class="input-field pl-10"
+                     placeholder="Marie"
+                     [class.border-red-500]="showError('middleName')">
+              <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+              </svg>
+            </div>
+            @if (showError('middleName')) {
+              @if (signupForm.get('middleName')?.errors?.['pattern']) {
+                <p class="mt-1 text-sm text-red-400">Letters only (A-Z)</p>
+              }
+            }
+          </div>
+          <div>
+            <label for="lastName" class="block text-sm font-medium text-gray-300 mb-2">Last Name <span class="text-red-500">*</span></label>
             <div class="relative">
               <input id="lastName"
                      type="text"
                      formControlName="lastName"
                      class="input-field pl-10"
-                     placeholder="Doe"
+                     placeholder="Awal"
                      [class.border-red-500]="showError('lastName')">
               <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
               </svg>
             </div>
             @if (showError('lastName')) {
-              <p class="mt-1 text-sm text-red-400">Last name is required</p>
+              @if (signupForm.get('lastName')?.errors?.['required']) {
+                <p class="mt-1 text-sm text-red-400">Last name is required</p>
+              } @else if (signupForm.get('lastName')?.errors?.['minlength']) {
+                <p class="mt-1 text-sm text-red-400">Min 2 characters</p>
+              } @else if (signupForm.get('lastName')?.errors?.['pattern']) {
+                <p class="mt-1 text-sm text-red-400">Letters only (A-Z)</p>
+              }
             }
           </div>
         </div>
 
         <!-- Email -->
         <div>
-          <label for="signupEmail" class="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
+          <label for="signupEmail" class="block text-sm font-medium text-gray-300 mb-2">Email Address <span class="text-red-500">*</span></label>
           <div class="relative">
             <input id="signupEmail"
                    type="email"
@@ -107,7 +137,7 @@
 
         <!-- Password -->
         <div>
-          <label for="signupPassword" class="block text-sm font-medium text-gray-300 mb-2">Password</label>
+          <label for="signupPassword" class="block text-sm font-medium text-gray-300 mb-2">Password <span class="text-red-500">*</span></label>
           <div class="relative">
             <input [type]="showPassword() ? 'text' : 'password'"
                    id="signupPassword"
@@ -150,14 +180,66 @@
               <p class="text-xs" [class]="passwordStrengthClass()">{{ passwordStrengthText() }}</p>
             </div>
           }
-          @if (showError('password')) {
-            <p class="mt-1 text-sm text-red-400">Password must be at least 6 characters</p>
+          <!-- Password Requirements Checklist -->
+          @if (signupForm.get('password')?.value) {
+            <div class="mt-2 space-y-1 text-xs">
+              <div class="flex items-center space-x-2" [class.text-green-400]="hasMinLength()" [class.text-gray-500]="!hasMinLength()">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  @if (hasMinLength()) {
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                  } @else {
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                  }
+                </svg>
+                <span>At least 8 characters</span>
+              </div>
+              <div class="flex items-center space-x-2" [class.text-green-400]="hasUppercase()" [class.text-gray-500]="!hasUppercase()">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  @if (hasUppercase()) {
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                  } @else {
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                  }
+                </svg>
+                <span>One uppercase letter (A-Z)</span>
+              </div>
+              <div class="flex items-center space-x-2" [class.text-green-400]="hasLowercase()" [class.text-gray-500]="!hasLowercase()">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  @if (hasLowercase()) {
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                  } @else {
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                  }
+                </svg>
+                <span>One lowercase letter (a-z)</span>
+              </div>
+              <div class="flex items-center space-x-2" [class.text-green-400]="hasDigit()" [class.text-gray-500]="!hasDigit()">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  @if (hasDigit()) {
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                  } @else {
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                  }
+                </svg>
+                <span>One number (0-9)</span>
+              </div>
+              <div class="flex items-center space-x-2" [class.text-green-400]="hasSpecialChar()" [class.text-gray-500]="!hasSpecialChar()">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  @if (hasSpecialChar()) {
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                  } @else {
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                  }
+                </svg>
+                <span>One special character (!&#64;#$%^&amp;*)</span>
+              </div>
+            </div>
           }
         </div>
 
         <!-- Confirm Password -->
         <div>
-          <label for="confirmPassword" class="block text-sm font-medium text-gray-300 mb-2">Confirm Password</label>
+          <label for="confirmPassword" class="block text-sm font-medium text-gray-300 mb-2">Confirm Password <span class="text-red-500">*</span></label>
           <div class="relative">
             <input [type]="showConfirmPassword() ? 'text' : 'password'"
                    id="confirmPassword"
@@ -230,7 +312,7 @@
         </div>
 
         <!-- Social Signup Buttons -->
-        <div class="grid grid-cols-2 gap-3">
+        <!-- <div class="grid grid-cols-2 gap-3">
           <button type="button"
                   class="flex items-center justify-center space-x-2 py-2.5 px-4 bg-dark-800 hover:bg-dark-700 border border-dark-600 rounded-lg transition-colors">
             <svg class="w-5 h-5" viewBox="0 0 24 24">
@@ -248,7 +330,7 @@
             </svg>
             <span class="text-sm text-gray-300">Facebook</span>
           </button>
-        </div>
+        </div> -->
       </form>
 
       <!-- Footer -->

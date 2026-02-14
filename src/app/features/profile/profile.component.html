@@ -93,12 +93,8 @@
                   <p class="text-white font-medium">{{ user()?.email }}</p>
                 </div>
                 <div>
-                  <p class="text-gray-500 text-sm mb-1">Phone Number</p>
+                  <p class="text-gray-500 text-sm mb-1 ">Phone Number</p>
                   <p class="text-white font-medium">{{ user()?.phone || 'Not provided' }}</p>
-                </div>
-                <div>
-                  <p class="text-gray-500 text-sm mb-1">User ID</p>
-                  <p class="text-gray-400 font-mono text-sm">{{ user()?.id }}</p>
                 </div>
               </div>
             } @else {

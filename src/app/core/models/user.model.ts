@@ -3,6 +3,7 @@ export type Gender = 'MALE' | 'FEMALE' | 'OTHER' | 'PREFER_NOT_TO_SAY';
 export interface User {
   id: string;
   firstName: string;
+  middleName?: string;
   lastName: string;
   email: string;
   phone?: string;
@@ -20,7 +21,8 @@ export interface User {
  */
 export function getUserFullName(user: User | null | undefined): string {
   if (!user) return '';
-  return `${user.firstName} ${user.lastName}`.trim();
+  const parts = [user.firstName, user.middleName, user.lastName].filter(Boolean);
+  return parts.join(' ').trim();
 }
 
 export interface LoginCredentials {
@@ -31,20 +33,23 @@ export interface LoginCredentials {
 
 export interface SignupData {
   firstName: string;
+  middleName?: string;
   lastName: string;
   email: string;
   password: string;
+  confirmPassword: string;
   phone?: string;
   dateOfBirth?: string;
   gender?: Gender;
 }
 
 export interface AuthResponse {
-  token: string;
-  type: string;
+  token: string | null;  // No longer provided - stored in HttpOnly cookie
+  type: string | null;   // No longer provided
   id: string;
   email: string;
   firstName: string;
+  middleName?: string;
   lastName: string;
   loyaltyPoints: number;
   isEmailVerified: boolean;
@@ -54,4 +59,11 @@ export interface AuthResponse {
 export interface ApiErrorResponse {
   success: false;
   message: string;
+}
+
+export interface ApiSuccessResponse<T> {
+  success: true;
+  message: string;
+  data: T;
+  timestamp: string;
 }

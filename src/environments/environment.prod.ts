@@ -13,8 +13,8 @@ export const environment = {
   },
 
   // Authentication Configuration
+  // Token is now stored in HttpOnly cookie - only user data cached locally
   auth: {
-    tokenKey: 'cineq_token',
     userKey: 'cineq_user',
     tokenExpiry: 2
   },

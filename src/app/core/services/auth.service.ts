@@ -1,7 +1,7 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { User, LoginCredentials, SignupData, AuthResponse, ApiErrorResponse, getUserFullName } from '../models/user.model';
+import { User, LoginCredentials, SignupData, AuthResponse, ApiErrorResponse, ApiSuccessResponse, getUserFullName } from '../models/user.model';
 import { ToastService } from './toast.service';
 import { environment } from '../../../environments/environment';
 
@@ -15,19 +15,20 @@ export class AuthService {
   private toastService = inject(ToastService);
   
   private userSignal = signal<User | null>(null);
-  private tokenSignal = signal<string | null>(null);
   private loadingSignal = signal<boolean>(false);
   private showLoginModalSignal = signal<boolean>(false);
   private showSignupModalSignal = signal<boolean>(false);
+  private showSignupSuccessModalSignal = signal<boolean>(false);
 
   // Public readonly signals
   readonly user = this.userSignal.asReadonly();
-  readonly token = this.tokenSignal.asReadonly();
   readonly loading = this.loadingSignal.asReadonly();
   readonly showLoginModal = this.showLoginModalSignal.asReadonly();
   readonly showSignupModal = this.showSignupModalSignal.asReadonly();
+  readonly showSignupSuccessModal = this.showSignupSuccessModalSignal.asReadonly();
   
-  readonly isAuthenticated = computed(() => !!this.userSignal() && !!this.tokenSignal());
+  // Authentication is now based on user data presence (cookie validated server-side)
+  readonly isAuthenticated = computed(() => !!this.userSignal());
 
   /** Helper to get user display name */
   readonly userFullName = computed(() => getUserFullName(this.userSignal()));
@@ -38,15 +39,15 @@ export class AuthService {
 
   /**
    * Load user session from localStorage / sessionStorage
+   * Note: JWT token is now stored in HttpOnly cookie (managed by browser)
+   * We only cache user data locally for UI purposes
    */
   private loadStoredSession(): void {
     try {
       const storedUser = localStorage.getItem(environment.auth.userKey) || sessionStorage.getItem(environment.auth.userKey);
-      const storedToken = localStorage.getItem(environment.auth.tokenKey) || sessionStorage.getItem(environment.auth.tokenKey);
       
-      if (storedUser && storedToken) {
+      if (storedUser) {
         this.userSignal.set(JSON.parse(storedUser));
-        this.tokenSignal.set(storedToken);
       }
     } catch (error) {
       console.error('Error loading stored session:', error);
@@ -87,34 +88,48 @@ export class AuthService {
   closeAllModals(): void {
     this.showLoginModalSignal.set(false);
     this.showSignupModalSignal.set(false);
+    this.showSignupSuccessModalSignal.set(false);
+  }
+
+  openSignupSuccessModal(): void {
+    this.showSignupSuccessModalSignal.set(true);
+  }
+
+  closeSignupSuccessModal(): void {
+    this.showSignupSuccessModalSignal.set(false);
+  }
+
+  closeSignupSuccessAndOpenLogin(): void {
+    this.showSignupSuccessModalSignal.set(false);
+    this.showLoginModalSignal.set(true);
   }
 
   // ──────────────────────────── Authentication API ────────────────────────────
 
   /**
    * Login with credentials
+   * Note: JWT token is now set as HttpOnly cookie by the server
    */
   async login(credentials: LoginCredentials): Promise<void> {
     this.loadingSignal.set(true);
 
     try {
       const response = await firstValueFrom(
-        this.http.post<AuthResponse>(`${AUTH_BASE_URL}/login`, {
+        this.http.post<ApiSuccessResponse<AuthResponse>>(`${AUTH_BASE_URL}/login`, {
           email: credentials.email,
           password: credentials.password
         })
       );
 
-      const user = this.mapAuthResponseToUser(response);
+      const authData = response.data;
+      const user = this.mapAuthResponseToUser(authData);
       this.userSignal.set(user);
-      this.tokenSignal.set(response.token);
 
-      // Persist session
+      // Persist user data locally for UI (token is in HttpOnly cookie)
       const storage = credentials.rememberMe ? localStorage : sessionStorage;
       storage.setItem(environment.auth.userKey, JSON.stringify(user));
-      storage.setItem(environment.auth.tokenKey, response.token);
 
-      this.toastService.success('Welcome Back!', `Hello, ${response.firstName}!`);
+      this.toastService.success('Welcome Back!', `Hello, ${authData.firstName}!`);
       this.closeLoginModal();
     } catch (error) {
       this.handleAuthError(error);
@@ -134,18 +149,19 @@ export class AuthService {
       await firstValueFrom(
         this.http.post(`${AUTH_BASE_URL}/register`, {
           firstName: data.firstName,
+          ...(data.middleName && { middleName: data.middleName }),
           lastName: data.lastName,
           email: data.email,
           password: data.password,
+          confirmPassword: data.confirmPassword,
           ...(data.phone && { phone: data.phone }),
           ...(data.dateOfBirth && { dateOfBirth: data.dateOfBirth }),
           ...(data.gender && { gender: data.gender })
         })
       );
 
-      this.toastService.success('Account Created!', 'Please check your email to verify your account, then log in.');
       this.closeSignupModal();
-      this.openLoginModal();
+      this.openSignupSuccessModal();
     } catch (error) {
       this.handleAuthError(error);
       throw error;
@@ -156,17 +172,16 @@ export class AuthService {
 
   /**
    * Logout user
+   * Note: Server will clear the HttpOnly cookie
    */
   async logout(): Promise<void> {
     try {
-      const token = this.tokenSignal();
-      if (token) {
-        await firstValueFrom(
-          this.http.post(`${AUTH_BASE_URL}/logout`, {})
-        ).catch(() => {
-          // Silently fail — clear local session regardless
-        });
-      }
+      // Always call logout endpoint - server extracts token from cookie
+      await firstValueFrom(
+        this.http.post(`${AUTH_BASE_URL}/logout`, {})
+      ).catch(() => {
+        // Silently fail — clear local session regardless
+      });
     } finally {
       this.clearSession();
       this.toastService.info('Logged Out', 'You have been logged out successfully.');
@@ -272,11 +287,12 @@ export class AuthService {
     return {
       id: response.id,
       firstName: response.firstName,
+      middleName: response.middleName,
       lastName: response.lastName,
       email: response.email,
       loyaltyPoints: response.loyaltyPoints ?? 0,
       isEmailVerified: response.isEmailVerified ?? false,
-      role: response.role ?? 'CUSTOMER',
+      role: response.role ?? 'NA',
       avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${response.email}`,
       createdAt: new Date()
     };
@@ -287,8 +303,22 @@ export class AuthService {
    */
   private handleAuthError(error: unknown): void {
     if (error instanceof HttpErrorResponse) {
+      // Rate limit errors are handled by interceptor, skip duplicate toast
+      if (error.status === 429) {
+        return;
+      }
+      
       const body = error.error as ApiErrorResponse | undefined;
-      const message = body?.message || 'Something went wrong. Please try again.';
+      let message = body?.message || 'Something went wrong. Please try again.';
+      
+      // Handle account lockout with countdown extraction
+      if (error.status === 400 && message.toLowerCase().includes('locked')) {
+        const match = message.match(/(\d+)\s*minutes?/i);
+        if (match) {
+          message = `Your account is temporarily locked. Please try again in ${match[1]} minutes.`;
+        }
+      }
+      
       this.toastService.error('Error', message);
     } else {
       this.toastService.error('Error', 'An unexpected error occurred.');
@@ -297,14 +327,12 @@ export class AuthService {
 
   /**
    * Clear user session from memory and storage
+   * Note: HttpOnly cookie is cleared by the server on logout
    */
   private clearSession(): void {
     this.userSignal.set(null);
-    this.tokenSignal.set(null);
     localStorage.removeItem(environment.auth.userKey);
-    localStorage.removeItem(environment.auth.tokenKey);
     sessionStorage.removeItem(environment.auth.userKey);
-    sessionStorage.removeItem(environment.auth.tokenKey);
   }
 
   checkAuth(): boolean {
@@ -324,7 +352,16 @@ export class AuthService {
     return this.userSignal();
   }
 
-  getToken(): string | null {
-    return this.tokenSignal();
+  /**
+   * Update the cached user data (for profile updates)
+   */
+  updateUserData(user: User): void {
+    this.userSignal.set(user);
+    // Update in whichever storage the user was stored
+    if (localStorage.getItem(environment.auth.userKey)) {
+      localStorage.setItem(environment.auth.userKey, JSON.stringify(user));
+    } else {
+      sessionStorage.setItem(environment.auth.userKey, JSON.stringify(user));
+    }
   }
 }

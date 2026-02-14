@@ -7,7 +7,7 @@ export const environment = {
     baseUrl: 'http://localhost:3000/api'
   },
   auth: {
-    tokenKey: 'cineq_token',
+    // Token is now stored in HttpOnly cookie - only user data cached locally
     userKey: 'cineq_user'
   }
 };

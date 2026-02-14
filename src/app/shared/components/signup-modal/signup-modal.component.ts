@@ -1,8 +1,20 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
+
+// Password validation constants
+const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_PATTERN = {
+  uppercase: /[A-Z]/,
+  lowercase: /[a-z]/,
+  digit: /[0-9]/,
+  special: /[^A-Za-z0-9]/
+};
+
+// Phone validation: 7-20 chars, only digits, +, -, (, ), spaces
+const PHONE_PATTERN = /^[0-9+\-\(\)\s]{7,20}$/;
 
 @Component({
   selector: 'app-signup-modal',
@@ -19,14 +31,18 @@ export class SignupModalComponent {
   showConfirmPassword = signal(false);
 
   signupForm: FormGroup = this.fb.group({
-    firstName: ['', [Validators.required, Validators.minLength(2)]],
-    lastName: ['', [Validators.required, Validators.minLength(2)]],
+    firstName: ['', [Validators.required, Validators.minLength(2), Validators.pattern(/^[a-zA-Z]+$/)]],
+    middleName: ['', [Validators.pattern(/^[a-zA-Z]*$/)]],
+    lastName: ['', [Validators.required, Validators.minLength(2), Validators.pattern(/^[a-zA-Z]+$/)]],
     email: ['', [Validators.required, Validators.email]],
-    phone: ['', [Validators.pattern(/^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/)]],
-    password: ['', [Validators.required, Validators.minLength(6)]],
+    phone: ['', [Validators.pattern(PHONE_PATTERN)]],
+    password: ['', [Validators.required, Validators.minLength(PASSWORD_MIN_LENGTH), this.passwordComplexityValidator]],
     confirmPassword: ['', [Validators.required]],
     acceptTerms: [false, [Validators.requiredTrue]]
   }, { validators: this.passwordMatchValidator });
+
+  // Computed password validation state for UI hints
+  readonly passwordValue = computed(() => this.signupForm.get('password')?.value || '');
 
   passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
     const password = control.get('password');
@@ -36,6 +52,52 @@ export class SignupModalComponent {
       return { passwordMismatch: true };
     }
     return null;
+  }
+
+  /**
+   * Custom validator for password complexity requirements
+   */
+  passwordComplexityValidator(control: AbstractControl): ValidationErrors | null {
+    const password = control.value;
+    if (!password) return null;
+
+    const errors: ValidationErrors = {};
+    
+    if (!PASSWORD_PATTERN.uppercase.test(password)) {
+      errors['noUppercase'] = true;
+    }
+    if (!PASSWORD_PATTERN.lowercase.test(password)) {
+      errors['noLowercase'] = true;
+    }
+    if (!PASSWORD_PATTERN.digit.test(password)) {
+      errors['noDigit'] = true;
+    }
+    if (!PASSWORD_PATTERN.special.test(password)) {
+      errors['noSpecial'] = true;
+    }
+    
+    return Object.keys(errors).length > 0 ? errors : null;
+  }
+
+  // Password requirement checkers for UI
+  hasMinLength(): boolean {
+    return (this.signupForm.get('password')?.value?.length || 0) >= PASSWORD_MIN_LENGTH;
+  }
+
+  hasUppercase(): boolean {
+    return PASSWORD_PATTERN.uppercase.test(this.signupForm.get('password')?.value || '');
+  }
+
+  hasLowercase(): boolean {
+    return PASSWORD_PATTERN.lowercase.test(this.signupForm.get('password')?.value || '');
+  }
+
+  hasDigit(): boolean {
+    return PASSWORD_PATTERN.digit.test(this.signupForm.get('password')?.value || '');
+  }
+
+  hasSpecialChar(): boolean {
+    return PASSWORD_PATTERN.special.test(this.signupForm.get('password')?.value || '');
   }
 
   showError(field: string): boolean {
@@ -60,10 +122,10 @@ export class SignupModalComponent {
     const password = this.signupForm.get('password')?.value || '';
     let strength = 0;
     
-    if (password.length >= 8) strength++;
-    if (/[a-z]/.test(password) && /[A-Z]/.test(password)) strength++;
-    if (/\d/.test(password)) strength++;
-    if (/[!@#$%^&*(),.?":{}|<>]/.test(password)) strength++;
+    if (password.length >= PASSWORD_MIN_LENGTH) strength++;
+    if (PASSWORD_PATTERN.lowercase.test(password) && PASSWORD_PATTERN.uppercase.test(password)) strength++;
+    if (PASSWORD_PATTERN.digit.test(password)) strength++;
+    if (PASSWORD_PATTERN.special.test(password)) strength++;
     
     return strength;
   }
@@ -113,7 +175,7 @@ export class SignupModalComponent {
     }
 
     try {
-      const { confirmPassword, acceptTerms, ...signupData } = this.signupForm.value;
+      const { acceptTerms, ...signupData } = this.signupForm.value;
       await this.authService.signup(signupData);
       this.signupForm.reset();
     } catch (error) {

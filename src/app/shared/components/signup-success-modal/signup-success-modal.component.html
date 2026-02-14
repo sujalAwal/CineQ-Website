@@ -1,0 +1,44 @@
+@if (authService.showSignupSuccessModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4" 
+       (click)="onBackdropClick($event)">
+    <!-- Backdrop -->
+    <div class="absolute inset-0 bg-black/70 backdrop-blur-sm animate-fade-in"></div>
+    
+    <!-- Modal -->
+    <div class="relative w-full max-w-md bg-dark-900 rounded-2xl shadow-2xl border border-dark-700 animate-scale-in"
+         role="dialog" aria-modal="true" aria-labelledby="success-title">
+      
+      <!-- Content -->
+      <div class="p-8 text-center">
+        <!-- Success Icon -->
+        <div class="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+          <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+          </svg>
+        </div>
+        
+        <!-- Title -->
+        <h2 id="success-title" class="text-2xl font-display font-bold text-white mb-3">Account Created!</h2>
+        
+        <!-- Message -->
+        <p class="text-gray-400 mb-6 leading-relaxed">
+          We've sent a verification email to your inbox. Please check your email and click the verification link to activate your account.
+        </p>
+        
+        <!-- Email Icon Hint -->
+        <div class="flex items-center justify-center gap-2 text-sm text-gray-500 mb-8">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+          </svg>
+          <span>Don't forget to check your spam folder</span>
+        </div>
+        
+        <!-- Action Button -->
+        <button (click)="close()" 
+                class="w-full btn-primary py-3 text-lg font-semibold">
+          Continue to Login
+        </button>
+      </div>
+    </div>
+  </div>
+}
