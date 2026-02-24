@@ -75,7 +75,8 @@ export const environment = {
     enableRegistration: ${env.FEATURE_ENABLE_REGISTRATION === 'true'},
     enableRememberMe: ${env.FEATURE_ENABLE_REMEMBER_ME === 'true'},
     enableForgotPassword: ${env.FEATURE_ENABLE_FORGOT_PASSWORD === 'true'}
-  }
+  },
+  googleClientId : '819220598893-hsj45m1ffsv3q9onjuaq1g031k489m2s.apps.googleusercontent.com'
 };
 `;
 
