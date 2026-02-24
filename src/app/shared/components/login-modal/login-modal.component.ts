@@ -3,8 +3,10 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../../core/services/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { environment } from '../../../../environments/environment';
 
-@Component({
+
+declare const google: any;@Component({
   selector: 'app-login-modal',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule],
@@ -61,4 +63,16 @@ export class LoginModalComponent {
       // Error already handled by AuthService toast
     }
   }
+
+  loginWithGoogle(): void {
+    google.accounts.id.initialize({
+      client_id: environment.googleClientId,
+      callback: (response: any) => {
+        console.log(response); // check browser console F12
+        // response.credential is the idToken
+      }
+    });
+
+    google.accounts.id.prompt();
+}
 }

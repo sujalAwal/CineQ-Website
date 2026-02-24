@@ -32,5 +32,6 @@ export const environment = {
     enableRegistration: true,
     enableRememberMe: true,
     enableForgotPassword: true
-  }
+  },
+  googleClientId : '819220598893-hsj45m1ffsv3q9onjuaq1g031k489m2s.apps.googleusercontent.com'
 };
