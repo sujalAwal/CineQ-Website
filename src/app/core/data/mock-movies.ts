@@ -2,98 +2,6 @@ import { Movie } from '../models/movie.model';
 
 export const MOCK_MOVIES: Movie[] = [
   {
-    id: '1',
-    title: 'Aa Bata Aama',
-    tagline: 'A Heartfelt Journey of Love and Sacrifice',
-    synopsis: 'Aa Bata Aama is an emotional family drama that explores the deep, heartfelt bond between a mother and her child. Set against the backdrop of rural and urban Nepal, it follows the struggles of a young man trying to fulfill his mother\'s dreams while navigating modern challenges.',
-    posterUrl: 'https://d346azgjfhsciq.cloudfront.net/S3/uploads/gallery/1765801697075-500_715.jpg', // Placeholder logic based on source
-    backdropUrl: 'https://www.qfxcinemas.com/images/movies/AaBataAama_Backdrop.jpg',
-    genres: ['Drama', 'Family'],
-    rating: 8.2,
-    duration: 160,
-    releaseDate: new Date('2026-01-23'),
-    status: 'now-showing',
-    director: 'Sudeep Bhupal Singh',
-    language: 'Nepali',
-    cast: [
-      { id: 'c1', name: 'Laxmi Giri', character: 'Aama', imageUrl: 'https://image.tmdb.org/t/p/w200/laxmi-giri.jpg' },
-      { id: 'c2', name: 'Ashirwad B Chhetri', character: 'Son', imageUrl: 'https://image.tmdb.org/t/p/w200/ashirwad.jpg' }
-    ],
-    trailer: 'https://www.youtube.com/embed/example_nepali_1',
-    showtimes: [
-      { id: 's1', time: '11:30 AM', date: new Date(), theater: 'QFX Civil Mall', price: 450, available: true },
-      { id: 's2', time: '05:15 PM', date: new Date(), theater: 'QFX Labim Mall', price: 500, available: true }
-    ]
-  },
-  {
-    id: '2',
-    title: 'Border 2',
-    tagline: 'The War Returns',
-    synopsis: 'A high-octane sequel to the classic war epic, focusing on the bravery of soldiers during historic border conflicts. The film captures the intensity of the 1971 Indo-Pak war through the eyes of a new generation of fighters.',
-    posterUrl: 'https://d346azgjfhsciq.cloudfront.net/S3/uploads/gallery/1766750642712-border_2.jpg',
-    backdropUrl: 'https://image.tmdb.org/t/p/original/border2_bg.jpg',
-    genres: ['Action', 'History', 'War'],
-    rating: 7.9,
-    duration: 200,
-    releaseDate: new Date('2026-01-23'),
-    status: 'now-showing',
-    director: 'Anurag Singh',
-    language: 'Hindi',
-    cast: [
-      { id: 'c3', name: 'Sunny Deol', character: 'Major Kuldip Singh', imageUrl: 'https://image.tmdb.org/t/p/w200/sunny.jpg' },
-      { id: 'c4', name: 'Diljit Dosanjh', character: 'Lieutenant', imageUrl: 'https://image.tmdb.org/t/p/w200/diljit.jpg' }
-    ],
-    trailer: 'https://www.youtube.com/embed/example_hindi_1',
-    showtimes: [
-      { id: 's3', time: '02:45 PM', date: new Date(), theater: 'FCube Cube 2', price: 350, available: true },
-      { id: 's4', time: '08:00 PM', date: new Date(), theater: 'FCube Cube 3', price: 400, available: true }
-    ]
-  },
-  {
-    id: '3',
-    title: 'Gobar Ganesh',
-    tagline: 'A Journey from Struggle to Dreams',
-    synopsis: 'A neglected son raised in a cowshed moves to the city with a dream to provide his mother a better life. Facing betrayal and loneliness, his mother’s love and girlfriend’s support give him the strength to change his destiny.',
-    posterUrl: 'https://d346azgjfhsciq.cloudfront.net/S3/uploads/gallery/1767351058086-gobarganeshposter.jpg',
-    backdropUrl: 'https://www.fcubecinemas.com/images/movies/GobarGanesh_Backdrop.jpg',
-    genres: ['Drama', 'Social'],
-    rating: 7.5,
-    duration: 140,
-    releaseDate: new Date('2026-01-15'),
-    status: 'now-showing',
-    director: 'Marichman Shrestha',
-    language: 'Nepali',
-    cast: [
-      { id: 'c5', name: 'Marichman Shrestha', character: 'Ganesh', imageUrl: 'https://image.tmdb.org/t/p/w200/marichman.jpg' },
-      { id: 'c6', name: 'Buddhi Tamang', character: 'Village Friend', imageUrl: 'https://image.tmdb.org/t/p/w200/buddhi.jpg' }
-    ],
-    trailer: 'https://www.youtube.com/embed/example_nepali_2',
-    showtimes: [
-      { id: 's5', time: '01:30 PM', date: new Date(), theater: 'FCube Cube 1', price: 300, available: true }
-    ]
-  },
-  {
-    id: '4',
-    title: 'Rammita Koo Pirati',
-    tagline: 'Love after Heartbreak',
-    synopsis: 'Rammita emerges from a toxic five-year relationship, believing her world has ended. As she navigates her heartbreak, she discovers new layers of herself and the possibility of a love that is kind and healing.',
-    posterUrl: 'https://www.fcubecinemas.com/GetThumbnailImage/1713',
-    backdropUrl: 'https://www.qfxcinemas.com/images/movies/Rammita_Backdrop.jpg',
-    genres: ['Romance', 'Drama'],
-    rating: 0,
-    duration: 145,
-    releaseDate: new Date('2026-02-06'),
-    status: 'coming-soon',
-    director: 'Sudepta',
-    language: 'Nepali',
-    cast: [
-      { id: 'c7', name: 'Anna Sharma', character: 'Rammita', imageUrl: 'https://image.tmdb.org/t/p/w200/anna.jpg' },
-      { id: 'c8', name: 'Dhiraj Magar', character: 'Sahaj', imageUrl: 'https://image.tmdb.org/t/p/w200/dhiraj.jpg' }
-    ],
-    trailer: 'https://www.youtube.com/embed/example_nepali_3',
-    showtimes: []
-  },
-  {
     id: '4',
     title: 'Spider-Man: Across the Spider-Verse',
     tagline: 'It\'s how you wear the mask that matters',
@@ -112,7 +20,7 @@ export const MOCK_MOVIES: Movie[] = [
       { id: 'c12', name: 'Hailee Steinfeld', character: 'Gwen Stacy (voice)', imageUrl: 'https://image.tmdb.org/t/p/w200/dxSDWkiVaC6JYjrV3XRAZI7HOSS.jpg' },
       { id: 'c13', name: 'Oscar Isaac', character: 'Miguel O\'Hara (voice)', imageUrl: 'https://image.tmdb.org/t/p/w200/dW5U5yrIIPmMjRThR9KT2xH6nTz.jpg' }
     ],
-    trailer: 'https://www.youtube.com/embed/cqGjhVJWtEg',
+    trailer: 'https://youtu.be/shW9i6k8cB0',
     showtimes: [
       { id: 's11', time: '10:30 AM', date: new Date(), theater: 'Screen 1', price: 300, available: true },
       { id: 's12', time: '02:00 PM', date: new Date(), theater: 'Screen 3', price: 320, available: true },
@@ -120,32 +28,54 @@ export const MOCK_MOVIES: Movie[] = [
     ]
   },
   {
-    id: '6',
-    title: 'Kung Fu Panda 4',
-    tagline: 'Get ready for awesomeness',
-    synopsis: 'Po must train a new warrior when he\'s chosen to become the Spiritual Leader of the Valley of Peace, and discovers his biggest fan is also his biggest threat.',
-    posterUrl: 'https://image.tmdb.org/t/p/w500/kDp1vUBnMpe8ak4rjgl3cLELqjU.jpg',
-    backdropUrl: 'https://image.tmdb.org/t/p/original/1XDDXPXGiI8id7MrUxK36ke7gkX.jpg',
-    genres: ['Animation', 'Comedy', 'Family'],
-    rating: 7.0,
-    duration: 94,
-    releaseDate: new Date('2024-03-08'),
-    status: 'now-showing',
-    director: 'Mike Mitchell',
-    language: 'English',
-    cast: [
-      { id: 'c17', name: 'Jack Black', character: 'Po (voice)', imageUrl: 'https://image.tmdb.org/t/p/w200/rtCx0fiYxJVhzXXdwZE2XRTfIKE.jpg' },
-      { id: 'c18', name: 'Awkwafina', character: 'Zhen (voice)', imageUrl: 'https://image.tmdb.org/t/p/w200/l5AKkg3H1QhMuXmTTmq1EyjyiRb.jpg' },
-      { id: 'c19', name: 'Viola Davis', character: 'The Chameleon (voice)', imageUrl: 'https://image.tmdb.org/t/p/w200/xDssAI6FPLaOQlPMIR3FvK6Mcgq.jpg' }
-    ],
-    trailer: 'https://www.youtube.com/embed/ZMafeDs8Txc',
-    showtimes: [
-      { id: 's17', time: '09:30 AM', date: new Date(), theater: 'Screen 3', price: 280, available: true },
-      { id: 's18', time: '12:30 PM', date: new Date(), theater: 'Screen 1', price: 300, available: true },
-      { id: 's19', time: '04:30 PM', date: new Date(), theater: 'Screen 3', price: 320, available: true }
-    ]
-  },
-  // Coming Soon Movies
+  id: 'jackie-brown01',
+  title: 'Jackie Brown',
+  tagline: 'The Queen of Crime returns.',
+  synopsis: 'Jackie Brown, a flight attendant caught in a web of crime and deception, navigates a dangerous game between law enforcement and ruthless criminals. In a thrilling turn of events, Jackie takes matters into her own hands as she tries to outwit both sides. Directed by Quentin Tarantino, the film is a gritty, stylish crime thriller with stellar performances from Pam Grier and Samuel L. Jackson.',
+  posterUrl: 'https://assets-in.bmscdn.com/iedb/movies/images/extra/vertical_logo/mobile/thumbnail/xxlarge/jackie-brown-et00486304-1770715655.jpg',
+  backdropUrl: 'https://assets-in.bmscdn.com/iedb/artist/images/website/poster/large/jackie-brown-banner.jpg',
+  genres: ['Crime', 'Thriller', 'Drama'],
+  rating: 8.0, // Movie rating
+  duration: 154, // Approx runtime from sources
+  releaseDate: new Date('1997-12-25'), // Original release date
+  status: 'now-showing',
+  director: 'Quentin Tarantino',
+  language: 'English',
+  cast: [
+    { id: 'cast01', name: 'Pam Grier', character: 'Jackie Brown', imageUrl: 'https://assets-in.bmscdn.com/iedb/artist/images/website/poster/large/pam-grier-2055040-1770707331.jpg' },
+    { id: 'cast02', name: 'Samuel L. Jackson', character: 'Ordell Robbie', imageUrl: 'https://assets-in.bmscdn.com/iedb/artist/images/website/poster/large/samuel-l-jackson-2018-1770707497.jpg' },
+    { id: 'cast03', name: 'Robert Forster', character: 'Max Cherry', imageUrl: 'https://assets-in.bmscdn.com/iedb/artist/images/website/poster/large/robert-forster-2019-1770707708.jpg' },
+    { id: 'cast04', name: 'Bridget Fonda', character: 'Melanie', imageUrl: 'https://assets-in.bmscdn.com/iedb/artist/images/website/poster/large/bridget-fonda-2556-1770707418.jpg' },
+    { id: 'cast05', name: 'Michael Keaton', character: 'Ray Nicolette', imageUrl: 'https://assets-in.bmscdn.com/iedb/artist/images/website/poster/large/michael-keaton-2857-1770707357.jpg' }
+  ],
+  trailer: 'https://www.youtube.com/embed/QZxIRp8ddhI',
+  showtimes: [] // Will populate once bookings open
+}
+,
+  {
+  id: 'toxic01',
+  title: 'Toxic: A Fairy Tale for Grown‑ups',
+  tagline: 'A dark fable of power, revenge and survival.',
+  synopsis: 'Toxic: A Fairy Tale for Grown‑ups is a high‑budget pan‑India gangster action thriller directed by Geetu Mohandas. The film follows the ruthless rise of Raya in the underworld amid political corruption and violent rivalry, blending mythic storytelling with gritty action. It stars Yash in the lead, supported by a stellar ensemble cast. Released in six languages including Kannada and Hindi, Toxic is set to be one of 2026’s biggest cinematic events.',
+  posterUrl: 'https://assets-in.bmscdn.com/iedb/movies/images/mobile/thumbnail/xlarge/toxic-a-fairy-tale-for-grown-ups-et00378770-1767955073.jpg', 
+  backdropUrl: 'https://assets-in.bmscdn.com/iedb/artist/images/website/poster/large/toxic-banner.jpg',
+  genres: ['Action', 'Crime', 'Thriller'],
+  rating: 0, // Official rating not yet published
+  duration: 122, // Approx runtime from industry listings
+  releaseDate: new Date('2026-03-19'),
+  status: 'coming-soon',
+  director: 'Geetu Mohandas',
+  language: 'Kannada, Hindi & multiple dubbed versions',
+  cast: [
+    { id: 'cast01', name: 'Yash', character: 'Raya', imageUrl: 'https://assets-in.bmscdn.com/iedb/artist/images/website/poster/large/yash-2537-1649749519.jpg' },
+    { id: 'cast02', name: 'Kiara Advani', character: 'Nadia', imageUrl: 'https://assets-in.bmscdn.com/iedb/artist/images/website/poster/large/kiara-advani-1043272-1655467015.jpg' },
+    { id: 'cast03', name: 'Nayanthara', character: 'Ganga', imageUrl: 'https://assets-in.bmscdn.com/iedb/artist/images/website/poster/large/nayanthara-5143-1675058766.jpg' },
+    { id: 'cast04', name: 'Huma Qureshi', character: 'Elizabeth', imageUrl: 'https://assets-in.bmscdn.com/iedb/artist/images/website/poster/large/huma-qureshi-30360-1769582788.jpg' },
+    { id: 'cast05', name: 'Tara Sutaria', character: 'Rebecca', imageUrl: 'https://assets-in.bmscdn.com/iedb/artist/images/website/poster/large/tara-sutaria-30191-11-04-2018-11-57-15.jpg' },
+    { id: 'cast06', name: 'Rukmini Vasanth', character: 'Mellisa', imageUrl: 'https://assets-in.bmscdn.com/iedb/artist/images/website/poster/large/rukmini-vasanth-1092753-15-05-2018-10-49-55.jpg' }],
+  trailer: 'https://www.youtube.com/',
+  showtimes: [] // Will populate once bookings open
+},
   {
     id: '7',
     title: 'Deadpool & Wolverine',
@@ -168,31 +98,70 @@ export const MOCK_MOVIES: Movie[] = [
     showtimes: []
   },
   {
-  id: '13',
-  title: 'Sikandar',
-  tagline: 'The King of Hearts returns',
-  synopsis: 'Sanjay "Sikandar" Rajkot, a benevolent royal, is motivated by a tragic accident to redeem his past by changing the lives of three people. However, his mission to protect the recipients of his late wife’s organ donations puts him directly in the crosshairs of a vengeful and powerful politician.',
-  posterUrl: 'https://m.media-amazon.com/images/M/MV5BYTFkYWM2YmQtMjExNC00ZDZiLTk4M2UtNDJlMzJmNWE4M2FiXkEyXkFqcGc@._V1_QL75_UX262.5_.jpg',
-  backdropUrl: 'https://stat5.bollywoodhungama.in/wp-content/uploads/2024/04/Sikandar-Banner.jpg',
-  genres: ['Action', 'Drama', 'Thriller'],
-  rating: 0,
-  duration: 150,
-  releaseDate: new Date('2026-03-30'),
+  id: 'dr1',
+  title: 'Dhurandhar: The Revenge',
+  tagline: 'The storm returns with vengeance.',
+  synopsis: 'Dhurandhar: The Revenge is an upcoming Hindi‑language spy action thriller and the sequel to the blockbuster film Dhurandhar. Undercover agent Hamza Ali Mazari continues his mission, infiltrating criminal syndicates and confronting powerful adversaries while seeking retribution and justice. The film expands its narrative stakes and emotional depth with an ensemble cast. ',
+  posterUrl: 'https://assets-in.bmscdn.com/iedb/movies/images/mobile/thumbnail/xlarge/dhurandhar-the-revenge-et00478890-1770096576.jpg', // official image from BookMyShow
+  backdropUrl: 'https://in.bookmyshow.com/movies/dhurandhar-the-revenge/ET00478890/banner', // official hero/banner image
+  genres: ['Action', 'Thriller', 'Spy'],
+  rating: 0, // Not rated yet
+  duration: 208, // Approx runtime from sources (may update) :contentReference[oaicite:1]{index=1}
+  releaseDate: new Date('2026-03-19'),
   status: 'coming-soon',
-  director: 'A.R. Murugadoss',
+  director: 'Aditya Dhar',
   language: 'Hindi',
   cast: [
-    { id: 'c33', name: 'Salman Khan', character: 'Sanjay Rajkot / Sikandar', imageUrl: 'https://image.tmdb.org/t/p/w200/8666U2v4S0S9Gf1iT08mIbzXfT.jpg' },
-    { id: 'c34', name: 'Rashmika Mandanna', character: 'Saisri Rajkot', imageUrl: 'https://image.tmdb.org/t/p/w200/6vS9L0995zG2O5Gk1XvK36O6R2U.jpg' },
-    { id: 'c35', name: 'Sathyaraj', character: 'Minister Rakesh Pradhan', imageUrl: 'https://image.tmdb.org/t/p/w200/9WYG0WfPUpfXUvjTz7x9n7S1H2.jpg' },
-    { id: 'c36', name: 'Kajal Aggarwal', character: 'Vaidehi Rangachari', imageUrl: 'https://image.tmdb.org/t/p/w200/3oXvN7GfL9Z3X7p4H2m9u4Gk1X.jpg' }
+    { id: 'cast1', name: 'Ranveer Singh', character: 'Hamza Ali Mazari / Jaskirat Singh Rangi', imageUrl: 'https://assets-in.bmscdn.com/iedb/artist/images/website/poster/large/ranveer_singh_19858_26-07-2016_04-59-37.jpg' },
+    { id: 'cast2', name: 'Sanjay Dutt', character: 'SP Chaudhary Aslam', imageUrl: 'https://assets-in.bmscdn.com/iedb/artist/images/website/poster/large/sanjay-dutt-2035-12-09-2017-05-07-10.jpg' },
+    { id: 'cast3', name: 'R. Madhavan', character: 'Ajay Sanyal', imageUrl: 'https://assets-in.bmscdn.com/iedb/artist/images/website/poster/large/r-madhavan-6790-1657260233.jpg' },
+    { id: 'cast4', name: 'Arjun Rampal', character: 'Major Iqbal', imageUrl: 'https://assets-in.bmscdn.com/iedb/artist/images/website/poster/large/arjun-rampal-225-24-03-2017-12-44-48.jpg' },
+    { id: 'cast5', name: 'Sara Arjun', character: 'Yalina Jamali', imageUrl: 'https://assets-in.bmscdn.com/iedb/artist/images/website/poster/large/sara-arjun-1055790-1764496804.jpg' }
   ],
-  trailer: 'https://www.youtube.com/embed/Sikandar_Official_Trailer',
-  showtimes: [
-    { id: 's20', time: '10:30 AM', date: new Date(), theater: 'QFX Civil Mall', price: 450, available: true },
-    { id: 's21', time: '02:00 PM', date: new Date(), theater: 'FCube Cube 1', price: 350, available: true },
-    { id: 's22', time: '06:30 PM', date: new Date(), theater: 'One Cinemas', price: 500, available: true }
-  ]
+  trailer: 'https://www.youtube.com/embed/6ms_PBlLx74', // Official teaser/trailer announcement :contentReference[oaicite:2]{index=2}
+  showtimes: [] // Coming soon once theatres open booking
+},
+   {
+    id: '4',
+    title: 'Rammita Koo Pirati',
+    tagline: 'Love after Heartbreak',
+    synopsis: 'Rammita emerges from a toxic five-year relationship, believing her world has ended. As she navigates her heartbreak, she discovers new layers of herself and the possibility of a love that is kind and healing.',
+    posterUrl: 'https://www.fcubecinemas.com/GetThumbnailImage/1713',
+    backdropUrl: 'https://www.qfxcinemas.com/images/movies/Rammita_Backdrop.jpg',
+    genres: ['Romance', 'Drama'],
+    rating: 0,
+    duration: 145,
+    releaseDate: new Date('2026-02-06'),
+    status: 'coming-soon',
+    director: 'Sudepta',
+    language: 'Nepali',
+    cast: [
+      { id: 'c7', name: 'Anna Sharma', character: 'Rammita', imageUrl: 'https://image.tmdb.org/t/p/w200/anna.jpg' },
+      { id: 'c8', name: 'Dhiraj Magar', character: 'Sahaj', imageUrl: 'https://image.tmdb.org/t/p/w200/dhiraj.jpg' }
+    ],
+    trailer: 'https://www.youtube.com/embed/example_nepali_3',
+    showtimes: []
+  },
+  {
+  id: 'spirit01',
+  title: 'Spirit',
+  tagline: 'An untold story of passion and revolution.',
+  synopsis: 'Spirit is an upcoming Indian action drama that blends thrilling fight sequences with emotional storytelling. Set in a turbulent political backdrop, it explores a man’s quest for justice and his struggle to break free from the chains of tradition. The film stars Prabhas in a high-octane role, along with Tripti Dimri. Directed by the acclaimed Sandeep Reddy Vanga, it promises to be a cinematic spectacle.',
+  posterUrl: 'https://assets-in.bmscdn.com/iedb/movies/images/mobile/thumbnail/xlarge/spirit-et00452121-1767338835.jpg',
+  backdropUrl: 'https://assets-in.bmscdn.com/iedb/artist/images/website/poster/large/spirit-banner.jpg',
+  genres: ['Action', 'Drama', 'Thriller'],
+  rating: 0, // Official rating not yet published
+  duration: 150, // Approx runtime from industry listings
+  releaseDate: new Date('2026-05-15'),
+  status: 'coming-soon',
+  director: 'Sandeep Reddy Vanga',
+  language: 'Hindi, Telugu, Kannada (multi‑language)',
+  cast: [
+    { id: 'cast01', name: 'Prabhas', character: 'Raghav', imageUrl: 'https://assets-in.bmscdn.com/iedb/artist/images/website/poster/large/prabhas-1708-1686915417.jpg' },
+    { id: 'cast02', name: 'Tripti Dimri', character: 'Suman', imageUrl: 'https://assets-in.bmscdn.com/iedb/artist/images/website/poster/large/tripti-dimri-1093177-01-06-2018-03-16-40.jpg' }
+  ],
+  trailer: 'https://www.youtube.com/embed/5tq1Wcz5f8s',
+  showtimes: [] // Will populate once bookings open
 },
   {
     id: '11',
@@ -218,27 +187,30 @@ export const MOCK_MOVIES: Movie[] = [
 ];
 
 export const HERO_BANNERS = [
- {
+  {
     id: 1,
-    movieId: '1',
-    title: 'Aa Bata Aama',
-    tagline: 'Now playing in theaters across Nepal',
-    imageUrl: 'https://d346azgjfhsciq.cloudfront.net/S3/uploads/gallery/1769586858894-banner.jpg',
-    ctaText: 'Book Tickets'
-  },
-   {
-
-    id: 3,
-
     movieId: '4',
-
     title: 'Spider-Man: Across the Spider-Verse',
-
     tagline: 'A visual masterpiece',
-
     imageUrl: 'https://image.tmdb.org/t/p/original/4HodYYKEIsGOdinkGi2Ucz6X9i0.jpg',
-
     ctaText: 'Book Now'
-
+  },
+  {
+    id: 2,
+    movieId: 'toxic01',
+    title: 'Toxic: A Fairy Tale for Grown‑ups',
+    tagline: 'A dark fable of power, revenge and survival.',
+    imageUrl: 'https://assets-in.bmscdn.com/iedb/movies/images/mobile/listing/xxlarge/toxic-a-fairy-tale-for-grown-ups-et00378770-1767955073.jpg',
+    trailerUrl: 'https://www.youtube.com/',
+    ctaText: 'Book Now'
+  },
+  {
+    id: 2,
+    movieId: '7',
+    title: 'Dhurandhar: The Revenge',
+    tagline: 'The storm returns with vengeance.',
+    imageUrl: 'https://assets-in.bmscdn.com/iedb/movies/images/mobile/listing/xxlarge/dhurandhar-the-revenge-et00478890-1770096576.jpg',
+    trailerUrl: 'https://www.youtube.com/embed/6ms_PBlLx74',
+    ctaText: 'Book Now'
   }
 ];

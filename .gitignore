@@ -6,6 +6,9 @@
 /out-tsc
 /bazel-out
 
+//GitHub Copilot md files
+.github/*.md
+
 # Node
 node_modules
 npm-debug.log
@@ -41,3 +44,6 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Auto-generated environment (contains secrets in production)
+src/environments/environment.prod.ts

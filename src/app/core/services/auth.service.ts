@@ -1,65 +1,53 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { User, LoginCredentials, SignupData, AuthResponse } from '../models/user.model';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+import { User, LoginCredentials, SignupData, AuthResponse, ApiErrorResponse, ApiSuccessResponse, getUserFullName } from '../models/user.model';
 import { ToastService } from './toast.service';
+import { environment } from '../../../environments/environment';
 
-// Default credentials (temporary until backend is ready)
-const DEFAULT_CREDENTIALS = {
-  email: 'user@cineq.com',
-  password: 'CineQ@2026'
-};
-
-const MAX_LOGIN_ATTEMPTS = 10;
-const LOCKOUT_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
+const AUTH_BASE_URL = `${environment.api.baseUrl}/frontend/customer/auth`;
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
+  private http = inject(HttpClient);
   private toastService = inject(ToastService);
   
   private userSignal = signal<User | null>(null);
-  private tokenSignal = signal<string | null>(null);
   private loadingSignal = signal<boolean>(false);
   private showLoginModalSignal = signal<boolean>(false);
   private showSignupModalSignal = signal<boolean>(false);
-  private loginAttemptsSignal = signal<number>(0);
-  private lockoutUntilSignal = signal<number | null>(null);
+  private showSignupSuccessModalSignal = signal<boolean>(false);
 
   // Public readonly signals
   readonly user = this.userSignal.asReadonly();
-  readonly token = this.tokenSignal.asReadonly();
   readonly loading = this.loadingSignal.asReadonly();
   readonly showLoginModal = this.showLoginModalSignal.asReadonly();
   readonly showSignupModal = this.showSignupModalSignal.asReadonly();
-  readonly loginAttempts = this.loginAttemptsSignal.asReadonly();
-  readonly lockoutUntil = this.lockoutUntilSignal.asReadonly();
+  readonly showSignupSuccessModal = this.showSignupSuccessModalSignal.asReadonly();
   
-  readonly isAuthenticated = computed(() => !!this.userSignal() && !!this.tokenSignal());
-  readonly isLockedOut = computed(() => {
-    const lockoutTime = this.lockoutUntilSignal();
-    return lockoutTime ? Date.now() < lockoutTime : false;
-  });
-  readonly remainingAttempts = computed(() => {
-    return Math.max(0, MAX_LOGIN_ATTEMPTS - this.loginAttemptsSignal());
-  });
+  // Authentication is now based on user data presence (cookie validated server-side)
+  readonly isAuthenticated = computed(() => !!this.userSignal());
+
+  /** Helper to get user display name */
+  readonly userFullName = computed(() => getUserFullName(this.userSignal()));
 
   constructor() {
-    // Check for existing session on init
     this.loadStoredSession();
-    this.loadLoginAttempts();
   }
 
   /**
-   * Load user session from localStorage
+   * Load user session from localStorage / sessionStorage
+   * Note: JWT token is now stored in HttpOnly cookie (managed by browser)
+   * We only cache user data locally for UI purposes
    */
   private loadStoredSession(): void {
     try {
-      const storedUser = localStorage.getItem('cineq_user');
-      const storedToken = localStorage.getItem('cineq_token');
+      const storedUser = localStorage.getItem(environment.auth.userKey) || sessionStorage.getItem(environment.auth.userKey);
       
-      if (storedUser && storedToken) {
+      if (storedUser) {
         this.userSignal.set(JSON.parse(storedUser));
-        this.tokenSignal.set(storedToken);
       }
     } catch (error) {
       console.error('Error loading stored session:', error);
@@ -67,193 +55,84 @@ export class AuthService {
     }
   }
 
-  /**
-   * Load login attempts from localStorage
-   */
-  private loadLoginAttempts(): void {
-    try {
-      const attempts = localStorage.getItem('cineq_login_attempts');
-      const lockoutUntil = localStorage.getItem('cineq_lockout_until');
-      
-      if (attempts) {
-        this.loginAttemptsSignal.set(parseInt(attempts, 10));
-      }
-      if (lockoutUntil) {
-        const lockoutTime = parseInt(lockoutUntil, 10);
-        if (Date.now() < lockoutTime) {
-          this.lockoutUntilSignal.set(lockoutTime);
-          const remainingMinutes = Math.ceil((lockoutTime - Date.now()) / 60000);
-          this.toastService.warning(
-            'Account Temporarily Locked',
-            `Too many failed attempts. Try again in ${remainingMinutes} minute(s).`
-          );
-        } else {
-          // Lockout expired, reset
-          this.resetLoginAttempts();
-        }
-      }
-    } catch (error) {
-      console.error('Error loading login attempts:', error);
-    }
-  }
+  // ──────────────────────────── Modal Management ────────────────────────────
 
-  /**
-   * Reset login attempts
-   */
-  private resetLoginAttempts(): void {
-    this.loginAttemptsSignal.set(0);
-    this.lockoutUntilSignal.set(null);
-    localStorage.removeItem('cineq_login_attempts');
-    localStorage.removeItem('cineq_lockout_until');
-  }
-
-  /**
-   * Increment login attempts
-   */
-  private incrementLoginAttempts(): void {
-    const newAttempts = this.loginAttemptsSignal() + 1;
-    this.loginAttemptsSignal.set(newAttempts);
-    localStorage.setItem('cineq_login_attempts', newAttempts.toString());
-
-    if (newAttempts >= MAX_LOGIN_ATTEMPTS) {
-      const lockoutUntil = Date.now() + LOCKOUT_DURATION;
-      this.lockoutUntilSignal.set(lockoutUntil);
-      localStorage.setItem('cineq_lockout_until', lockoutUntil.toString());
-      
-      this.toastService.error(
-        'Account Locked',
-        'Too many failed login attempts. Please try again after 10 minutes.'
-      );
-    }
-  }
-
-  /**
-   * Open login modal
-   */
   openLoginModal(): void {
     this.showSignupModalSignal.set(false);
     this.showLoginModalSignal.set(true);
   }
 
-  /**
-   * Close login modal
-   */
   closeLoginModal(): void {
     this.showLoginModalSignal.set(false);
   }
 
-  /**
-   * Open signup modal
-   */
   openSignupModal(): void {
     this.showLoginModalSignal.set(false);
     this.showSignupModalSignal.set(true);
   }
 
-  /**
-   * Close signup modal
-   */
   closeSignupModal(): void {
     this.showSignupModalSignal.set(false);
   }
 
-  /**
-   * Switch from login to signup modal
-   */
   switchToSignup(): void {
     this.showLoginModalSignal.set(false);
     this.showSignupModalSignal.set(true);
   }
 
-  /**
-   * Switch from signup to login modal
-   */
   switchToLogin(): void {
     this.showSignupModalSignal.set(false);
     this.showLoginModalSignal.set(true);
   }
 
-  /**
-   * Close all modals
-   */
   closeAllModals(): void {
     this.showLoginModalSignal.set(false);
     this.showSignupModalSignal.set(false);
+    this.showSignupSuccessModalSignal.set(false);
   }
+
+  openSignupSuccessModal(): void {
+    this.showSignupSuccessModalSignal.set(true);
+  }
+
+  closeSignupSuccessModal(): void {
+    this.showSignupSuccessModalSignal.set(false);
+  }
+
+  closeSignupSuccessAndOpenLogin(): void {
+    this.showSignupSuccessModalSignal.set(false);
+    this.showLoginModalSignal.set(true);
+  }
+
+  // ──────────────────────────── Authentication API ────────────────────────────
 
   /**
    * Login with credentials
-   * Uses default credentials until backend API is ready
+   * Note: JWT token is now set as HttpOnly cookie by the server
    */
-  async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    // Check if account is locked
-    if (this.isLockedOut()) {
-      const lockoutTime = this.lockoutUntilSignal();
-      const remainingMinutes = lockoutTime ? Math.ceil((lockoutTime - Date.now()) / 60000) : 10;
-      this.toastService.error(
-        'Account Locked',
-        `Too many failed attempts. Try again in ${remainingMinutes} minute(s).`
-      );
-      throw new Error('Account temporarily locked');
-    }
-
+  async login(credentials: LoginCredentials): Promise<void> {
     this.loadingSignal.set(true);
-    
+
     try {
-      // TODO: Replace with actual API call
-      // const response = await this.http.post<AuthResponse>(`${environment.apiUrl}/auth/login`, credentials).toPromise();
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Validate credentials against default
-      if (credentials.email !== DEFAULT_CREDENTIALS.email || 
-          credentials.password !== DEFAULT_CREDENTIALS.password) {
-        this.incrementLoginAttempts();
-        
-        const remaining = this.remainingAttempts();
-        if (remaining > 0) {
-          this.toastService.error(
-            'Login Failed',
-            `Invalid email or password. ${remaining} attempt(s) remaining.`
-          );
-        }
-        
-        throw new Error('Invalid credentials');
-      }
-
-      // Successful login - reset attempts
-      this.resetLoginAttempts();
-
-      const mockResponse: AuthResponse = {
-        user: {
-          id: 'user_' + Date.now(),
-          fullName: 'CineQ User',
+      const response = await firstValueFrom(
+        this.http.post<ApiSuccessResponse<AuthResponse>>(`${AUTH_BASE_URL}/login`, {
           email: credentials.email,
-          phone: '9876543210',
-          avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + credentials.email,
-          createdAt: new Date()
-        },
-        token: 'mock_jwt_token_' + Date.now(),
-        expiresIn: 86400 // 24 hours
-      };
+          password: credentials.password
+        })
+      );
 
-      this.userSignal.set(mockResponse.user);
-      this.tokenSignal.set(mockResponse.token);
+      const authData = response.data;
+      const user = this.mapAuthResponseToUser(authData);
+      this.userSignal.set(user);
 
-      // Store in localStorage if remember me
-      if (credentials.rememberMe) {
-        localStorage.setItem('cineq_user', JSON.stringify(mockResponse.user));
-        localStorage.setItem('cineq_token', mockResponse.token);
-      } else {
-        sessionStorage.setItem('cineq_user', JSON.stringify(mockResponse.user));
-        sessionStorage.setItem('cineq_token', mockResponse.token);
-      }
+      // Persist user data locally for UI (token is in HttpOnly cookie)
+      const storage = credentials.rememberMe ? localStorage : sessionStorage;
+      storage.setItem(environment.auth.userKey, JSON.stringify(user));
 
-      this.toastService.success('Welcome Back!', 'Login successful');
+      this.toastService.success('Welcome Back!', `Hello, ${authData.firstName}!`);
       this.closeLoginModal();
-      return mockResponse;
     } catch (error) {
+      this.handleAuthError(error);
       throw error;
     } finally {
       this.loadingSignal.set(false);
@@ -261,45 +140,31 @@ export class AuthService {
   }
 
   /**
-   * Sign up new user
-   * Simulates API call - replace with actual HTTP request
+   * Register a new customer account
    */
-  async signup(data: SignupData): Promise<AuthResponse> {
+  async signup(data: SignupData): Promise<void> {
     this.loadingSignal.set(true);
-    
+
     try {
-      // TODO: Replace with actual API call
-      // const response = await this.http.post<AuthResponse>(`${environment.apiUrl}/auth/signup`, data).toPromise();
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Simulate successful signup
-      const mockResponse: AuthResponse = {
-        user: {
-          id: 'user_' + Date.now(),
-          fullName: data.fullName,
+      await firstValueFrom(
+        this.http.post(`${AUTH_BASE_URL}/register`, {
+          firstName: data.firstName,
+          ...(data.middleName && { middleName: data.middleName }),
+          lastName: data.lastName,
           email: data.email,
-          phone: data.phone,
-          avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=' + data.email,
-          createdAt: new Date()
-        },
-        token: 'mock_jwt_token_' + Date.now(),
-        expiresIn: 86400
-      };
+          password: data.password,
+          confirmPassword: data.confirmPassword,
+          ...(data.phone && { phone: data.phone }),
+          ...(data.dateOfBirth && { dateOfBirth: data.dateOfBirth }),
+          ...(data.gender && { gender: data.gender })
+        })
+      );
 
-      this.userSignal.set(mockResponse.user);
-      this.tokenSignal.set(mockResponse.token);
-
-      // Store in localStorage
-      localStorage.setItem('cineq_user', JSON.stringify(mockResponse.user));
-      localStorage.setItem('cineq_token', mockResponse.token);
-
-      this.toastService.success('Welcome!', 'Account created successfully');
       this.closeSignupModal();
-      return mockResponse;
+      this.openSignupSuccessModal();
     } catch (error) {
-      throw new Error('Signup failed. Please try again.');
+      this.handleAuthError(error);
+      throw error;
     } finally {
       this.loadingSignal.set(false);
     }
@@ -307,42 +172,196 @@ export class AuthService {
 
   /**
    * Logout user
+   * Note: Server will clear the HttpOnly cookie
    */
-  logout(): void {
-    this.clearSession();
-    this.toastService.info('Logged Out', 'You have been logged out successfully');
+  async logout(): Promise<void> {
+    try {
+      // Always call logout endpoint - server extracts token from cookie
+      await firstValueFrom(
+        this.http.post(`${AUTH_BASE_URL}/logout`, {})
+      ).catch(() => {
+        // Silently fail — clear local session regardless
+      });
+    } finally {
+      this.clearSession();
+      this.toastService.info('Logged Out', 'You have been logged out successfully.');
+    }
   }
 
   /**
-   * Clear user session
+   * Forgot password — request a reset link
+   */
+  async forgotPassword(email: string): Promise<void> {
+    this.loadingSignal.set(true);
+
+    try {
+      await firstValueFrom(
+        this.http.post(`${AUTH_BASE_URL}/forgot-password`, { email })
+      );
+      this.toastService.success('Email Sent', 'If the email exists, a reset link has been sent.');
+    } catch (error) {
+      // API always returns success to prevent enumeration, but handle network errors
+      this.toastService.success('Email Sent', 'If the email exists, a reset link has been sent.');
+    } finally {
+      this.loadingSignal.set(false);
+    }
+  }
+
+  /**
+   * Reset password with token
+   */
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    this.loadingSignal.set(true);
+
+    try {
+      await firstValueFrom(
+        this.http.post(`${AUTH_BASE_URL}/reset-password`, { token, newPassword })
+      );
+      this.toastService.success('Password Reset', 'Your password has been reset. Please log in.');
+    } catch (error) {
+      this.handleAuthError(error);
+      throw error;
+    } finally {
+      this.loadingSignal.set(false);
+    }
+  }
+
+  /**
+   * Validate a password reset token
+   */
+  async validateResetToken(token: string): Promise<boolean> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<{ data: { valid: boolean } }>(`${AUTH_BASE_URL}/validate-reset-token?token=${token}`)
+      );
+      return response?.data?.valid ?? false;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Verify email with verification token
+   */
+  async verifyEmail(token: string): Promise<void> {
+    this.loadingSignal.set(true);
+
+    try {
+      await firstValueFrom(
+        this.http.post(`${AUTH_BASE_URL}/verify-email?token=${token}`, {})
+      );
+      this.toastService.success('Email Verified', 'Your email has been verified. You can now log in.');
+    } catch (error) {
+      this.handleAuthError(error);
+      throw error;
+    } finally {
+      this.loadingSignal.set(false);
+    }
+  }
+
+  /**
+   * Resend verification email
+   */
+  async resendVerification(email: string): Promise<void> {
+    this.loadingSignal.set(true);
+
+    try {
+      await firstValueFrom(
+        this.http.post(`${AUTH_BASE_URL}/resend-verification`, { email })
+      );
+      this.toastService.success('Verification Sent', 'A new verification email has been sent.');
+    } catch (error) {
+      this.handleAuthError(error);
+      throw error;
+    } finally {
+      this.loadingSignal.set(false);
+    }
+  }
+
+  // ──────────────────────────── Helpers ────────────────────────────
+
+  /**
+   * Map the login AuthResponse to our User model
+   */
+  private mapAuthResponseToUser(response: AuthResponse): User {
+    return {
+      id: response.id,
+      firstName: response.firstName,
+      middleName: response.middleName,
+      lastName: response.lastName,
+      email: response.email,
+      loyaltyPoints: response.loyaltyPoints ?? 0,
+      isEmailVerified: response.isEmailVerified ?? false,
+      role: response.role ?? 'NA',
+      avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${response.email}`,
+      createdAt: new Date()
+    };
+  }
+
+  /**
+   * Handle auth-related HTTP errors
+   */
+  private handleAuthError(error: unknown): void {
+    if (error instanceof HttpErrorResponse) {
+      // Rate limit errors are handled by interceptor, skip duplicate toast
+      if (error.status === 429) {
+        return;
+      }
+      
+      const body = error.error as ApiErrorResponse | undefined;
+      let message = body?.message || 'Something went wrong. Please try again.';
+      
+      // Handle account lockout with countdown extraction
+      if (error.status === 400 && message.toLowerCase().includes('locked')) {
+        const match = message.match(/(\d+)\s*minutes?/i);
+        if (match) {
+          message = `Your account is temporarily locked. Please try again in ${match[1]} minutes.`;
+        }
+      }
+      
+      this.toastService.error('Error', message);
+    } else {
+      this.toastService.error('Error', 'An unexpected error occurred.');
+    }
+  }
+
+  /**
+   * Clear user session from memory and storage
+   * Note: HttpOnly cookie is cleared by the server on logout
    */
   private clearSession(): void {
     this.userSignal.set(null);
-    this.tokenSignal.set(null);
-    localStorage.removeItem('cineq_user');
-    localStorage.removeItem('cineq_token');
-    sessionStorage.removeItem('cineq_user');
-    sessionStorage.removeItem('cineq_token');
+    localStorage.removeItem(environment.auth.userKey);
+    sessionStorage.removeItem(environment.auth.userKey);
   }
 
-  /**
-   * Check if user is authenticated
-   */
   checkAuth(): boolean {
     return this.isAuthenticated();
   }
 
   /**
-   * Get current user
+   * Handle expired/invalid session (called by interceptor on 401)
    */
+  handleSessionExpired(): void {
+    this.clearSession();
+    this.toastService.warning('Session Expired', 'Please log in again.');
+    this.openLoginModal();
+  }
+
   getCurrentUser(): User | null {
     return this.userSignal();
   }
 
   /**
-   * Get auth token
+   * Update the cached user data (for profile updates)
    */
-  getToken(): string | null {
-    return this.tokenSignal();
+  updateUserData(user: User): void {
+    this.userSignal.set(user);
+    // Update in whichever storage the user was stored
+    if (localStorage.getItem(environment.auth.userKey)) {
+      localStorage.setItem(environment.auth.userKey, JSON.stringify(user));
+    } else {
+      sessionStorage.setItem(environment.auth.userKey, JSON.stringify(user));
+    }
   }
 }

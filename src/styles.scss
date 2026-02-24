@@ -1,3 +1,6 @@
+/* Import Design System Variables - MUST be first */
+@use 'styles/variables';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -81,6 +84,57 @@
 
   .section-title {
     @apply text-2xl md:text-3xl font-display font-bold mb-6;
+  }
+
+  /* Common Portal/Dashboard Styles */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-6);
+    border-radius: var(--radius-lg);
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+  }
+
+  .form-input,
+  .form-select {
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--neutral-300);
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: border-color 0.2s ease;
+
+    &:focus {
+      outline: none;
+      border-color: var(--primary-500);
+      box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+    }
+  }
+
+  textarea.form-input {
+    resize: vertical;
+  }
+
+  .form-label {
+    display: block;
+    margin-bottom: var(--space-2);
+    font-weight: 500;
+    color: var(--neutral-700);
+  }
+
+  .data-card {
+    background: #fff;
+    border-radius: var(--radius-xl);
+    padding: var(--space-6);
+    border: 1px solid var(--neutral-200);
+    box-shadow: var(--shadow-sm);
   }
 }
 

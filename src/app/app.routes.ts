@@ -46,6 +46,11 @@ export const routes: Routes = [
     title: 'Customer Portal - CineQ'
   },
   {
+    path: 'verify-email',
+    loadComponent: () => import('./features/verify-email/verify-email.component').then(m => m.VerifyEmailComponent),
+    title: 'Verify Email - CineQ'
+  },
+  {
     path: '**',
     redirectTo: '',
     pathMatch: 'full'

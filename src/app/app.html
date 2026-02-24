@@ -1,0 +1,19 @@
+
+    <div class="min-h-screen flex flex-col bg-dark-950">
+      <app-navbar />
+      
+      <main class="flex-1">
+        <router-outlet />
+      </main>
+      
+      <app-footer />
+      
+      <!-- Global Modals -->
+      <app-login-modal />
+      <app-signup-modal />
+      <app-signup-success-modal />
+      
+      <!-- Toast Notifications -->
+      <app-toast />
+    </div>
+  

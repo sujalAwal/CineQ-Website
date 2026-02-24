@@ -147,14 +147,7 @@ import { BookingDetails } from '../../core/models/booking.model';
                           <span>Download</span>
                         </button>
                       }
-                      @if (booking.status === 'confirmed' || booking.status === 'pending') {
-                        <button 
-                          (click)="cancelBooking(booking)"
-                          class="text-red-400 hover:text-red-300 text-sm font-medium transition-colors"
-                        >
-                          Cancel Booking
-                        </button>
-                      }
+                  
                       <a 
                         [routerLink]="['/movie', booking.movie.id]"
                         class="text-gray-400 hover:text-white text-sm font-medium transition-colors ml-auto"

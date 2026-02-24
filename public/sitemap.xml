@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- Homepage -->
+  <url>
+    <loc>https://cineq.tech/</loc>
+    <lastmod>2026-02-09</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  
+  <!-- Now Showing Movies -->
+  <url>
+    <loc>https://cineq.tech/movies</loc>
+    <lastmod>2026-02-09</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.9</priority>
+  </url>
+  
+  <!-- Coming Soon -->
+  <url>
+    <loc>https://cineq.tech/coming-soon</loc>
+    <lastmod>2026-02-09</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  
+  <!-- 
+    Note: Movie detail pages should be dynamically generated.
+    Consider implementing a server-side sitemap generator for:
+    - /movie/{movie-id} pages
+    - Dynamic content updates
+  -->
+</urlset>

@@ -3,7 +3,7 @@ name: Cine Q Deployment
 on:
   push:
     branches:
-      - main
+      - develop
 
 jobs:
   deploy:
@@ -33,12 +33,16 @@ jobs:
           echo "::endgroup::"
 
       - name: 🏗️ Building Angular App
+        env:
+          API_BASE_URL: ${{ vars.API_BASE_URL }}
         run: |
           echo "::group::Angular Build Process"
+          echo "Generating environment configuration..."
+          node scripts/generate-env.js
           echo "Building 'cine-q' for Production..."
           npm run build -- --configuration production
           echo "Build complete. Checking output directory..."
-          ls -R dist/cineq-app
+          ls -R dist/cineq-app/browser
           echo "::endgroup::"
 
       - name: ☁️ Publishing to Cloudflare Pages
@@ -47,7 +51,7 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           projectName: 'cine-q'
-          directory: 'dist/cineq-app'
+          directory: 'dist/cineq-app/browser'
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
         # This action automatically logs its own progress (uploading, etc.)
 
