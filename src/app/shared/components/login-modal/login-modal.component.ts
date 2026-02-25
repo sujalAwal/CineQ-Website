@@ -67,12 +67,16 @@ export class LoginModalComponent {
   loginWithGoogle(): void {
     google.accounts.id.initialize({
       client_id: environment.googleClientId,
-      callback: (response: any) => {
-        console.log(response); // check browser console F12
-        // response.credential is the idToken
+      callback: async (response: any) => {
+        try {
+          await this.authService.googleLogin(response.credential);
+          this.loginForm.reset();
+        } catch (error) {
+          // Error already handled by AuthService toast
+        }
       }
     });
 
     google.accounts.id.prompt();
-}
+  }
 }

@@ -5,7 +5,7 @@ import { User, LoginCredentials, SignupData, AuthResponse, ApiErrorResponse, Api
 import { ToastService } from './toast.service';
 import { environment } from '../../../environments/environment';
 
-const AUTH_BASE_URL = `${environment.api.baseUrl}/frontend/customer/auth`;
+const AUTH_BASE_URL = `${environment.api.baseUrl}/customer/auth`;
 
 @Injectable({
   providedIn: 'root'
@@ -128,6 +128,38 @@ export class AuthService {
       // Persist user data locally for UI (token is in HttpOnly cookie)
       const storage = credentials.rememberMe ? localStorage : sessionStorage;
       storage.setItem(environment.auth.userKey, JSON.stringify(user));
+
+      this.toastService.success('Welcome Back!', `Hello, ${authData.firstName}!`);
+      this.closeLoginModal();
+    } catch (error) {
+      this.handleAuthError(error);
+      throw error;
+    } finally {
+      this.loadingSignal.set(false);
+    }
+  }
+
+
+  /**
+   * Login with Google credential
+   * Note: JWT token is now set as HttpOnly cookie by the server
+   */
+  async googleLogin(idToken: string): Promise<void> {
+    this.loadingSignal.set(true);
+
+    try {
+      const response = await firstValueFrom(
+        this.http.post<ApiSuccessResponse<AuthResponse>>(`${AUTH_BASE_URL}/login/google`, {
+          credential: idToken
+        })
+      );
+
+      const authData = response.data;
+      const user = this.mapAuthResponseToUser(authData);
+      this.userSignal.set(user);
+
+      // Persist user data in localStorage (Google login = persistent session)
+      localStorage.setItem(environment.auth.userKey, JSON.stringify(user));
 
       this.toastService.success('Welcome Back!', `Hello, ${authData.firstName}!`);
       this.closeLoginModal();
