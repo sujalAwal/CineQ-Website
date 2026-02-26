@@ -51,6 +51,11 @@ export const routes: Routes = [
     title: 'Verify Email - CineQ'
   },
   {
+    path: 'privacy-policy',
+    loadComponent: () => import('./features/privacy-policy/privacy-policy.component').then(m => m.PrivacyPolicyComponent),
+    title: 'Privacy Policy - CineQ'
+  },
+  {
     path: '**',
     redirectTo: '',
     pathMatch: 'full'
