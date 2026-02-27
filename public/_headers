@@ -1,0 +1,3 @@
+/*
+  Cross-Origin-Opener-Policy: same-origin-allow-popups
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://accounts.google.com https://apis.google.com; style-src 'self' 'unsafe-inline' https://accounts.google.com; img-src 'self' data: https:; font-src 'self' data:; frame-src https://accounts.google.com; connect-src 'self' https://accounts.google.com https://api.cineq.tech;
