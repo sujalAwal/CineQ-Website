@@ -65,18 +65,33 @@ export class LoginModalComponent {
   }
 
   loginWithGoogle(): void {
-    google.accounts.id.initialize({
-      client_id: environment.googleClientId,
-      callback: async (response: any) => {
-        try {
-          await this.authService.googleLogin(response.credential);
-          this.loginForm.reset();
-        } catch (error) {
-          // Error already handled by AuthService toast
-        }
+  google.accounts.id.initialize({
+    client_id: environment.googleClientId,
+    callback: async (response: any) => {
+      try {
+        await this.authService.googleLogin(response.credential);
+        this.loginForm.reset();
+      } catch (error) {
+        // Error already handled by AuthService toast
       }
+    },
+    ux_mode: 'popup',        // ensures popup opens
+    cancel_on_tap_outside: false
+  });
+
+  // Use renderButton instead of prompt()
+  const buttonContainer = document.getElementById('google-signin-btn');
+  if (buttonContainer) {
+    buttonContainer.innerHTML = ''; // clear previous renders
+    google.accounts.id.renderButton(buttonContainer, {
+      theme: 'outline',
+      size: 'large',
+      width: 300,
+      text: 'signin_with'
     });
 
-    google.accounts.id.prompt();
+    // Programmatically click the rendered button
+    (buttonContainer.querySelector('div[role="button"]') as HTMLElement)?.click();
   }
+}
 }
