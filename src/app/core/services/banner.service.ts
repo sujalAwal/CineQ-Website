@@ -25,7 +25,7 @@ export class BannerService {
     this.loadingSignal.set(true);
     this.errorSignal.set(null);
 
-    this.http.get<BannerApiResponse>(`${environment.apiUrl}/public/banners`).subscribe({
+    this.http.get<BannerApiResponse>(`${environment.api.baseUrl}/public/banners`).subscribe({
       next: (response) => {
         if (response.success) {
           const sorted = [...response.data].sort((a, b) => a.order - b.order);
