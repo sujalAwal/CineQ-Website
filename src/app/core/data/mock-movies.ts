@@ -186,31 +186,4 @@ export const MOCK_MOVIES: Movie[] = [
   }
 ];
 
-export const HERO_BANNERS = [
-  {
-    id: 1,
-    movieId: '4',
-    title: 'Spider-Man: Across the Spider-Verse',
-    tagline: 'A visual masterpiece',
-    imageUrl: 'https://image.tmdb.org/t/p/original/4HodYYKEIsGOdinkGi2Ucz6X9i0.jpg',
-    ctaText: 'Book Now'
-  },
-  {
-    id: 2,
-    movieId: 'toxic01',
-    title: 'Toxic: A Fairy Tale for Grown‑ups',
-    tagline: 'A dark fable of power, revenge and survival.',
-    imageUrl: 'https://assets-in.bmscdn.com/iedb/movies/images/mobile/listing/xxlarge/toxic-a-fairy-tale-for-grown-ups-et00378770-1767955073.jpg',
-    trailerUrl: 'https://www.youtube.com/',
-    ctaText: 'Book Now'
-  },
-  {
-    id: 2,
-    movieId: '7',
-    title: 'Dhurandhar: The Revenge',
-    tagline: 'The storm returns with vengeance.',
-    imageUrl: 'https://assets-in.bmscdn.com/iedb/movies/images/mobile/listing/xxlarge/dhurandhar-the-revenge-et00478890-1770096576.jpg',
-    trailerUrl: 'https://www.youtube.com/embed/6ms_PBlLx74',
-    ctaText: 'Book Now'
-  }
-];
+

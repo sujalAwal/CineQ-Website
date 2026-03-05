@@ -1,6 +1,6 @@
 import { Injectable, signal, computed } from '@angular/core';
 import { Movie } from '../models/movie.model';
-import { MOCK_MOVIES, HERO_BANNERS } from '../data/mock-movies';
+import { MOCK_MOVIES } from '../data/mock-movies';
 
 @Injectable({
   providedIn: 'root'
@@ -20,8 +20,6 @@ export class MovieService {
   readonly comingSoonMovies = computed(() => 
     this.moviesSignal().filter(movie => movie.status === 'coming-soon')
   );
-
-  readonly heroBanners = signal(HERO_BANNERS);
 
   constructor() {}
 

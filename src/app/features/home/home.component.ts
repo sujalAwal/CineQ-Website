@@ -2,6 +2,7 @@ import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MovieService } from '../../core/services/movie.service';
+import { BannerService } from '../../core/services/banner.service';
 import { MovieCardComponent } from '../../shared/components/movie-card/movie-card.component';
 
 @Component({
@@ -11,16 +12,37 @@ import { MovieCardComponent } from '../../shared/components/movie-card/movie-car
   template: `
     <!-- Hero Section -->
     <section class="relative h-[70vh] md:h-[85vh] overflow-hidden">
+
+      <!-- Loading Skeleton -->
+      @if (bannerService.loading()) {
+        <div class="absolute inset-0 bg-dark-900 animate-pulse">
+          <div class="absolute inset-0 bg-gradient-to-r from-dark-950 via-dark-900 to-dark-950"></div>
+          <div class="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center">
+            <div class="max-w-2xl space-y-4">
+              <div class="h-6 w-32 bg-dark-700 rounded-full"></div>
+              <div class="h-16 w-3/4 bg-dark-700 rounded-lg"></div>
+              <div class="h-7 w-2/3 bg-dark-700 rounded"></div>
+              <div class="flex gap-4 pt-2">
+                <div class="h-12 w-36 bg-dark-700 rounded-lg"></div>
+                <div class="h-12 w-36 bg-dark-700 rounded-lg"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
       <!-- Hero Slides -->
-      @for (banner of movieService.heroBanners(); track banner.id; let i = $index) {
+      @for (banner of bannerService.banners(); track banner.id; let i = $index) {
         <div class="absolute inset-0 transition-opacity duration-1000"
              [class.opacity-100]="currentSlide() === i"
-             [class.opacity-0]="currentSlide() !== i">
+             [class.opacity-0]="currentSlide() !== i"
+             [class.pointer-events-none]="currentSlide() !== i">
           <!-- Background Image -->
           <div class="absolute inset-0">
             <img [src]="banner.imageUrl" 
-                 [alt]="banner.title"
-                 class="w-full h-full object-cover">
+                 [alt]="banner.imageAltText || banner.title"
+                 class="w-full h-full object-cover"
+                 loading="lazy">
             <div class="absolute inset-0 bg-gradient-to-r from-dark-950 via-dark-950/80 to-transparent"></div>
             <div class="absolute inset-0 bg-gradient-to-t from-dark-950 via-transparent to-dark-950/30"></div>
           </div>
@@ -35,21 +57,26 @@ import { MovieCardComponent } from '../../shared/components/movie-card/movie-car
                 {{ banner.title }}
               </h1>
               <p class="text-xl md:text-2xl text-gray-300 mb-8">
-                {{ banner.tagline }}
+                {{ banner.description }}
               </p>
               <div class="flex flex-wrap gap-4">
-                <a [routerLink]="['/movie', banner.movieId]" class="btn-primary py-3 px-8 text-lg inline-flex items-center space-x-2">
-                  <span>{{ banner.ctaText }}</span>
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-                  </svg>
-                </a>
-                <button class="btn-secondary py-3 px-8 text-lg inline-flex items-center space-x-2">
-                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
-                  </svg>
-                  <span>Watch Trailer</span>
-                </button>
+                @for (btn of banner.buttons; track btn.title) {
+                  <a [href]="btn.redirectLink"
+                     [target]="btn.openInNewTab ? '_blank' : '_self'"
+                     rel="noopener noreferrer"
+                     [class]="(btn.buttonType === 'secondary' ? 'btn-secondary' : 'btn-primary') + ' py-3 px-8 text-lg inline-flex items-center space-x-2'">
+                    @if (btn.title.toLowerCase().includes('trailer')) {
+                      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
+                      </svg>
+                    } @else {
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                      </svg>
+                    }
+                    <span>{{ btn.title }}</span>
+                  </a>
+                }
               </div>
             </div>
           </div>
@@ -58,7 +85,7 @@ import { MovieCardComponent } from '../../shared/components/movie-card/movie-car
 
       <!-- Slide Indicators -->
       <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex space-x-3">
-        @for (banner of movieService.heroBanners(); track banner.id; let i = $index) {
+        @for (banner of bannerService.banners(); track banner.id; let i = $index) {
           <button (click)="goToSlide(i)"
                   class="w-3 h-3 rounded-full transition-all duration-300"
                   [class.bg-primary-500]="currentSlide() === i"
@@ -247,11 +274,13 @@ import { MovieCardComponent } from '../../shared/components/movie-card/movie-car
 })
 export class HomeComponent implements OnInit, OnDestroy {
   movieService = inject(MovieService);
+  bannerService = inject(BannerService);
   
   currentSlide = signal(0);
   private slideInterval: ReturnType<typeof setInterval> | null = null;
 
   ngOnInit(): void {
+    this.bannerService.loadBanners();
     this.startAutoSlide();
   }
 
@@ -272,12 +301,14 @@ export class HomeComponent implements OnInit, OnDestroy {
   }
 
   nextSlide(): void {
-    const banners = this.movieService.heroBanners();
+    const banners = this.bannerService.banners();
+    if (!banners.length) return;
     this.currentSlide.update(current => (current + 1) % banners.length);
   }
 
   prevSlide(): void {
-    const banners = this.movieService.heroBanners();
+    const banners = this.bannerService.banners();
+    if (!banners.length) return;
     this.currentSlide.update(current => (current - 1 + banners.length) % banners.length);
   }
 
