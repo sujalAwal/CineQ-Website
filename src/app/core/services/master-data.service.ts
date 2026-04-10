@@ -31,7 +31,7 @@ export class MasterDataService {
     this.errorSignal.set(null);
 
     this.http
-      .get<MasterDataResponse>(`${environment.apiUrl}/public/master-data`)
+      .get<MasterDataResponse>(`${environment.api.baseUrl}/public/master-data`)
       .subscribe({
         next: (response) => {
           this.masterDataSignal.set(response);

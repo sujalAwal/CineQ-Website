@@ -314,7 +314,7 @@ export class MovieDetailComponent implements OnInit {
     this.loading.set(true);
     this.error.set(null);
 
-    this.http.get<MovieDetailResponse>(`${environment.apiUrl}/public/movies/${movieId}`)
+    this.http.get<MovieDetailResponse>(`${environment.api.baseUrl}/public/movies/${movieId}`)
       .subscribe({
         next: (response) => {
           if (response.success && response.data) {

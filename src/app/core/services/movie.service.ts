@@ -17,6 +17,8 @@ export interface MovieSection {
   providedIn: 'root'
 })
 export class MovieService {
+
+  private apiUrl = environment.api.baseUrl;
   private nowShowingSectionSignal = signal<MovieSection>({
     statusCode: 'NOW_SHOWING',
     name: '',
@@ -86,7 +88,7 @@ export class MovieService {
     
     section.update(s => ({ ...s, loading: true, error: null }));
 
-    const url = `${environment.apiUrl}/public/movies?releaseStatus=${statusCode}&size=100`;
+    const url = `${this.apiUrl}/public/movies?releaseStatus=${statusCode}&size=100`;
 
     this.http.get<MovieListResponse>(url).subscribe({
       next: (response) => {
@@ -121,7 +123,7 @@ export class MovieService {
    */
   getMovieById(id: string): void {
     this.http
-      .get<MovieDetailResponse>(`${environment.apiUrl}/public/movies/${id}`)
+      .get<MovieDetailResponse>(`${this.apiUrl}/public/movies/${id}`)
       .subscribe({
         next: (response) => {
           if (response.success) {
