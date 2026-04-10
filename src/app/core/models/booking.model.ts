@@ -35,3 +35,16 @@ export interface PaymentMethod {
   name: string;
   icon: string;
 }
+
+export interface InitiatePaymentRequest{
+  bookingId: string;
+  amount: number;
+  paymentMethod: string;
+}
+
+
+export interface PaymentGatewayResponse {
+  success: boolean;
+  paymentUrl?: string;
+  message?: string;
+}

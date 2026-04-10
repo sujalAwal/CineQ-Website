@@ -18,10 +18,19 @@ export class MovieCardComponent {
     return `${hours}h ${mins}m`;
   }
 
-  formatReleaseDate(date: Date): string {
-    return new Date(date).toLocaleDateString('en-US', { 
+  formatReleaseDate(dateString: string | Date): string {
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+    return date.toLocaleDateString('en-US', { 
       month: 'short', 
       day: 'numeric' 
     });
+  }
+
+  isComingSoon(): boolean {
+    return this.movie.status === 'COMING_SOON';
+  }
+
+  isNowShowing(): boolean {
+    return this.movie.status === 'NOW_SHOWING';
   }
 }

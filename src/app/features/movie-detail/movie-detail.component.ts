@@ -2,11 +2,13 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 import { MovieService } from '../../core/services/movie.service';
 import { AuthService } from '../../core/services/auth.service';
 import { BookingService } from '../../core/services/booking.service';
 import { ToastService } from '../../core/services/toast.service';
-import { Movie, Showtime } from '../../core/models/movie.model';
+import { Movie, MovieDetailResponse } from '../../core/models/movie.model';
 import { MovieCardComponent } from '../../shared/components/movie-card/movie-card.component';
 
 @Component({
@@ -14,14 +16,36 @@ import { MovieCardComponent } from '../../shared/components/movie-card/movie-car
   standalone: true,
   imports: [CommonModule, RouterLink, MovieCardComponent],
   template: `
-    @if (movie()) {
+    @if (loading()) {
+      <div class="min-h-screen bg-dark-950 flex items-center justify-center">
+        <div class="text-center">
+          <div class="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p class="text-gray-400">Loading movie details...</p>
+        </div>
+      </div>
+    } @else if (error()) {
+      <div class="min-h-screen bg-dark-950 flex items-center justify-center">
+        <div class="text-center">
+          <svg class="w-16 h-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4v2m0 4v2m0-12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <p class="text-red-400">{{ error() }}</p>
+        </div>
+      </div>
+    } @else if (movie()) {
       <!-- Hero Section with Backdrop -->
-      <section class="relative min-h-[60vh] md:min-h-[70vh]">
+      <section class="relative min-h-[60vh] md:min-h-[70vh] bg-dark-950">
         <!-- Background -->
         <div class="absolute inset-0">
-          <img [src]="movie()!.backdropUrl" 
-               [alt]="movie()!.title"
-               class="w-full h-full object-cover">
+          @if (movie()?.banner) {
+            <img [src]="movie()!.banner" 
+                 [alt]="movie()!.title"
+                 class="w-full h-full object-cover">
+          } @else {
+            <img [src]="movie()!.poster" 
+                 [alt]="movie()!.title"
+                 class="w-full h-full object-cover">
+          }
           <div class="absolute inset-0 bg-gradient-to-r from-dark-950 via-dark-950/90 to-dark-950/50"></div>
           <div class="absolute inset-0 bg-gradient-to-t from-dark-950 via-transparent to-dark-950/50"></div>
         </div>
@@ -43,40 +67,32 @@ import { MovieCardComponent } from '../../shared/components/movie-card/movie-car
             <!-- Poster -->
             <div class="flex-shrink-0 animate-slide-up">
               <div class="relative w-64 md:w-80 mx-auto lg:mx-0">
-                <img [src]="movie()!.posterUrl" 
+                <img [src]="movie()!.poster" 
                      [alt]="movie()!.title"
                      class="w-full rounded-2xl shadow-2xl">
-                <!-- Rating Badge -->
-                @if (movie()!.rating > 0) {
-                  <div class="absolute -bottom-4 left-1/2 -translate-x-1/2 flex items-center space-x-2 bg-dark-900 px-4 py-2 rounded-full border border-dark-700">
-                    <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                    </svg>
-                    <span class="text-lg font-bold text-white">{{ movie()!.rating.toFixed(1) }}</span>
-                    <span class="text-sm text-gray-400">/10</span>
-                  </div>
-                }
               </div>
             </div>
 
             <!-- Movie Info -->
             <div class="flex-1 animate-slide-up" style="animation-delay: 100ms">
               <!-- Status Badge -->
-              @if (movie()!.status === 'coming-soon') {
+              @if (movie()!.status === 'COMING_SOON') {
                 <span class="inline-block px-3 py-1 bg-accent-500/20 text-accent-400 rounded-full text-sm font-medium mb-4">
                   Coming Soon
                 </span>
-              } @else {
+              } @else if (movie()!.status === 'NOW_SHOWING') {
                 <span class="inline-block px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-sm font-medium mb-4">
                   Now Showing
                 </span>
+              } @else {
+                <span class="inline-block px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-sm font-medium mb-4">
+                  {{ movie()!.status }}
+                </span>
               }
 
-              <h1 class="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-white mb-2">
+              <h1 class="text-3xl md:text-4xl lg:text-5xl font-display font-bold text-white mb-4">
                 {{ movie()!.title }}
               </h1>
-
-              <p class="text-xl text-gray-300 mb-6">{{ movie()!.tagline }}</p>
 
               <!-- Meta Info -->
               <div class="flex flex-wrap items-center gap-4 mb-6 text-gray-400">
@@ -93,32 +109,52 @@ import { MovieCardComponent } from '../../shared/components/movie-card/movie-car
                   </svg>
                   <span>{{ formatDate(movie()!.releaseDate) }}</span>
                 </div>
-                <span class="text-dark-600">•</span>
-                <span>{{ movie()!.language }}</span>
+                @if (movie()?.language?.length) {
+                  <span class="text-dark-600">•</span>
+                  <span>{{ movie()?.language?.join(', ') }}</span>
+                }
+              </div>
+
+              <!-- Additional Info -->
+              <div class="space-y-2 mb-6 text-gray-300">
+                @if (movie()?.country) {
+                  <div>
+                    <span class="text-gray-400">Country:</span>
+                    <span class="ml-2">{{ movie()!.country }}</span>
+                  </div>
+                }
+                @if (movie()?.certification) {
+                  <div>
+                    <span class="text-gray-400">Certification:</span>
+                    <span class="ml-2 badge badge-primary">{{ movie()!.certification }}</span>
+                  </div>
+                }
+                @if (movie()?.formats?.length) {
+                  <div>
+                    <span class="text-gray-400">Formats:</span>
+                    <span class="ml-2">{{ movie()?.formats?.join(', ') }}</span>
+                  </div>
+                }
               </div>
 
               <!-- Genres -->
               <div class="flex flex-wrap gap-2 mb-6">
-                @for (genre of movie()!.genres; track genre) {
-                  <span class="badge badge-primary px-3 py-1">{{ genre }}</span>
+                @for (genre of movie()!.genres; track genre.id) {
+                  <span class="badge badge-primary px-3 py-1">{{ genre.name }}</span>
                 }
               </div>
 
-              <!-- Synopsis -->
-              <div class="mb-8">
-                <h3 class="text-lg font-semibold text-white mb-2">Synopsis</h3>
-                <p class="text-gray-300 leading-relaxed">{{ movie()!.synopsis }}</p>
-              </div>
-
-              <!-- Director -->
-              <div class="mb-6">
-                <span class="text-gray-400">Director:</span>
-                <span class="text-white ml-2">{{ movie()!.director }}</span>
-              </div>
+              <!-- Description -->
+              @if (movie()?.description) {
+                <div class="mb-8">
+                  <h3 class="text-lg font-semibold text-white mb-2">Synopsis</h3>
+                  <p class="text-gray-300 leading-relaxed">{{ movie()!.description }}</p>
+                </div>
+              }
 
               <!-- Action Buttons -->
               <div class="flex flex-wrap gap-4">
-                @if (movie()!.status === 'now-showing') {
+                @if (movie()!.status === 'NOW_SHOWING') {
                   <button (click)="bookTicket()" class="btn-primary py-3 px-8 text-lg inline-flex items-center space-x-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/>
@@ -133,12 +169,14 @@ import { MovieCardComponent } from '../../shared/components/movie-card/movie-car
                     <span>Notify Me</span>
                   </button>
                 }
-                <button (click)="toggleTrailer()" class="btn-ghost py-3 px-6 inline-flex items-center space-x-2 border border-dark-600">
-                  <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
-                  </svg>
-                  <span>Watch Trailer</span>
-                </button>
+                @if (hasTrailer()) {
+                  <button (click)="toggleTrailer()" class="btn-ghost py-3 px-6 inline-flex items-center space-x-2 border border-dark-600">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
+                    </svg>
+                    <span>Watch Trailer</span>
+                  </button>
+                }
               </div>
             </div>
           </div>
@@ -151,7 +189,7 @@ import { MovieCardComponent } from '../../shared/components/movie-card/movie-car
           <div class="absolute inset-0 bg-black/90 backdrop-blur-sm"></div>
           <div class="relative w-full max-w-5xl aspect-video bg-dark-900 rounded-xl overflow-hidden animate-scale-in" (click)="$event.stopPropagation()">
             <button (click)="toggleTrailer()" 
-                    class="absolute -top-12 right-0 p-2 text-white hover:text-primary-400 transition-colors">
+                    class="absolute -top-12 right-0 p-2 text-white hover:text-primary-400 transition-colors z-10">
               <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
               </svg>
@@ -167,7 +205,7 @@ import { MovieCardComponent } from '../../shared/components/movie-card/movie-car
       }
 
       <!-- Cast Section -->
-      @if (movie()!.cast.length > 0) {
+      @if (movie()?.starcast?.length) {
         <section class="py-12 bg-dark-950">
           <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 class="section-title flex items-center space-x-3">
@@ -176,74 +214,42 @@ import { MovieCardComponent } from '../../shared/components/movie-card/movie-car
             </h2>
 
             <div class="flex space-x-6 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
-              @for (actor of movie()!.cast; track actor.id) {
+              @for (cast of movie()!.starcast; track cast.artistId) {
                 <div class="flex-shrink-0 w-32 text-center">
-                  <div class="w-24 h-24 mx-auto mb-3 rounded-full overflow-hidden bg-dark-800">
-                    <img [src]="actor.imageUrl" 
-                         [alt]="actor.name"
-                         class="w-full h-full object-cover"
-                         loading="lazy">
+                  <!-- Avatar Circle -->
+                  <div class="w-24 h-24 mx-auto mb-3 rounded-full overflow-hidden bg-dark-800 border-2 border-primary-500/30">
+                    @if (cast.artist.avatar?.trim()) {
+                      <img [src]="cast.artist.avatar" 
+                           [alt]="cast.artist.fullName" 
+                           class="w-full h-full object-cover">
+                    } @else {
+                      <div class="w-full h-full bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center">
+                        <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                        </svg>
+                      </div>
+                    }
                   </div>
-                  <h4 class="text-white font-medium text-sm truncate">{{ actor.name }}</h4>
-                  <p class="text-gray-400 text-xs truncate">{{ actor.character }}</p>
+                  
+                  <!-- Actor Name -->
+                  <h4 class="text-white font-medium text-sm truncate mb-1">{{ cast.artist.fullName }}</h4>
+                  
+                  <!-- Character Name or Role -->
+                  @if (cast.characterName && cast.characterName.trim() !== '') {
+                    <p class="text-primary-400 text-xs truncate mb-2">{{ cast.characterName }}</p>
+                  } @else {
+                    <p class="text-gray-400 text-xs truncate mb-2">Cast Member</p>
+                  }
+                  
+                  <!-- Bottom Badge - Artist Type Full Name -->
+                  @if (cast.artistType) {
+                    <span class="inline-block px-2.5 py-1 bg-primary-500/30 text-primary-300 text-xs rounded-full border border-primary-500/50 font-medium">
+                      {{ cast.artistType.name }}
+                    </span>
+                  }
                 </div>
               }
             </div>
-          </div>
-        </section>
-      }
-
-      <!-- Showtimes Section -->
-      @if (movie()!.status === 'now-showing' && movie()!.showtimes.length > 0) {
-        <section class="py-12 bg-dark-900">
-          <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="section-title flex items-center space-x-3">
-              <span class="w-1 h-8 bg-accent-500 rounded-full"></span>
-              <span>Showtimes</span>
-            </h2>
-
-            <!-- Date Selector -->
-            <div class="flex space-x-3 mb-6 overflow-x-auto pb-2">
-              @for (date of dateOptions; track date.value; let i = $index) {
-                <button (click)="selectDate(i)"
-                        class="flex-shrink-0 px-4 py-3 rounded-xl text-center transition-all duration-300"
-                        [class.bg-primary-500]="selectedDateIndex() === i"
-                        [class.text-white]="selectedDateIndex() === i"
-                        [class.bg-dark-800]="selectedDateIndex() !== i"
-                        [class.text-gray-300]="selectedDateIndex() !== i"
-                        [class.hover:bg-dark-700]="selectedDateIndex() !== i">
-                  <div class="text-xs uppercase">{{ date.day }}</div>
-                  <div class="text-lg font-semibold">{{ date.date }}</div>
-                </button>
-              }
-            </div>
-
-            <!-- Showtime Buttons -->
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-              @for (showtime of movie()!.showtimes; track showtime.id) {
-                <button (click)="selectShowtime(showtime)"
-                        [disabled]="!showtime.available"
-                        class="card p-4 text-center transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                        [class.border-primary-500]="selectedShowtime()?.id === showtime.id"
-                        [class.bg-primary-500/10]="selectedShowtime()?.id === showtime.id">
-                  <div class="text-lg font-semibold text-white">{{ showtime.time }}</div>
-                  <div class="text-sm text-gray-400">{{ showtime.theater }}</div>
-                  <div class="text-primary-400 font-medium mt-1">₹{{ showtime.price }}</div>
-                  @if (!showtime.available) {
-                    <span class="text-xs text-red-400 mt-1 block">Sold Out</span>
-                  }
-                </button>
-              }
-            </div>
-
-            <!-- Book Button -->
-            @if (selectedShowtime()) {
-              <div class="mt-8 text-center">
-                <button (click)="proceedToBooking()" class="btn-primary py-3 px-12 text-lg">
-                  Continue to Seat Selection
-                </button>
-              </div>
-            }
           </div>
         </section>
       }
@@ -258,21 +264,13 @@ import { MovieCardComponent } from '../../shared/components/movie-card/movie-car
             </h2>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              @for (movie of relatedMovies(); track movie.id) {
-                <app-movie-card [movie]="movie"></app-movie-card>
+              @for (relatedMovie of relatedMovies(); track relatedMovie.id) {
+                <app-movie-card [movie]="relatedMovie"></app-movie-card>
               }
             </div>
           </div>
         </section>
       }
-    } @else {
-      <!-- Loading State -->
-      <div class="min-h-screen flex items-center justify-center">
-        <div class="text-center">
-          <div class="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p class="text-gray-400">Loading movie details...</p>
-        </div>
-      </div>
     }
   `,
   styles: [`
@@ -288,51 +286,82 @@ import { MovieCardComponent } from '../../shared/components/movie-card/movie-car
 export class MovieDetailComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private http = inject(HttpClient);
   private sanitizer = inject(DomSanitizer);
   private movieService = inject(MovieService);
   private authService = inject(AuthService);
-  private bookingService = inject(BookingService);
   private toastService = inject(ToastService);
+
+  // Expose Math to template
+  protected readonly Math = Math;
 
   movie = signal<Movie | null>(null);
   relatedMovies = signal<Movie[]>([]);
   showTrailer = signal(false);
-  selectedShowtime = signal<Showtime | null>(null);
-  selectedDateIndex = signal(0);
-
-  dateOptions = this.generateDateOptions();
+  loading = signal(false);
+  error = signal<string | null>(null);
 
   ngOnInit(): void {
     this.route.params.subscribe(params => {
       const movieId = params['id'];
-      const movie = this.movieService.getMovieById(movieId);
-      
-      if (movie) {
-        this.movie.set(movie);
-        this.relatedMovies.set(this.movieService.getRelatedMovies(movieId, 4));
-        this.selectedShowtime.set(null);
-      } else {
-        this.router.navigate(['/']);
-        this.toastService.error('Movie not found');
+      if (movieId) {
+        this.loadMovieDetails(movieId);
       }
     });
   }
 
-  private generateDateOptions(): { day: string; date: string; value: Date }[] {
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const options = [];
-    
-    for (let i = 0; i < 7; i++) {
-      const date = new Date();
-      date.setDate(date.getDate() + i);
-      options.push({
-        day: i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : days[date.getDay()],
-        date: date.getDate().toString(),
-        value: date
+  private loadMovieDetails(movieId: string): void {
+    this.loading.set(true);
+    this.error.set(null);
+
+    this.http.get<MovieDetailResponse>(`${environment.apiUrl}/public/movies/${movieId}`)
+      .subscribe({
+        next: (response) => {
+          if (response.success && response.data) {
+            this.movie.set(response.data);
+            // TODO: Implement related movies from a dedicated API endpoint
+            // For now, related movies functionality is disabled
+          } else {
+            this.error.set('Movie details not found');
+            setTimeout(() => this.router.navigate(['/']), 2000);
+          }
+          this.loading.set(false);
+        },
+        error: (err) => {
+          console.error('Error loading movie details:', err);
+          this.error.set('Failed to load movie details');
+          this.loading.set(false);
+        }
       });
+  }
+
+  hasTrailer(): boolean {
+    const movie = this.movie();
+    return !!(movie?.trailerUrl && movie.trailerUrl.trim() !== '');
+  }
+
+  safeTrailerUrl(): SafeResourceUrl {
+    const movie = this.movie();
+    if (!movie?.trailerUrl) return '';
+    
+    let trailerUrl = movie.trailerUrl;
+    // Handle YouTube URLs - convert to embed format
+    if (trailerUrl.includes('youtube.com') || trailerUrl.includes('youtu.be')) {
+      if (!trailerUrl.includes('embed')) {
+        const videoId = trailerUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/)?.[1];
+        if (videoId) {
+          trailerUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+        }
+      }
     }
     
-    return options;
+    return this.sanitizer.bypassSecurityTrustResourceUrl(trailerUrl);
+  }
+
+  toggleTrailer(): void {
+    if (this.hasTrailer()) {
+      this.showTrailer.update(v => !v);
+    }
   }
 
   formatDuration(minutes: number): string {
@@ -341,33 +370,13 @@ export class MovieDetailComponent implements OnInit {
     return `${hours}h ${mins}m`;
   }
 
-  formatDate(date: Date): string {
-    return new Date(date).toLocaleDateString('en-US', { 
+  formatDate(dateString: string | Date): string {
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+    return date.toLocaleDateString('en-US', { 
       year: 'numeric',
       month: 'long', 
       day: 'numeric' 
     });
-  }
-
-  safeTrailerUrl(): SafeResourceUrl {
-    const movie = this.movie();
-    if (!movie) return '';
-    return this.sanitizer.bypassSecurityTrustResourceUrl(movie.trailer + '?autoplay=1');
-  }
-
-  toggleTrailer(): void {
-    this.showTrailer.update(v => !v);
-  }
-
-  selectDate(index: number): void {
-    this.selectedDateIndex.set(index);
-    this.selectedShowtime.set(null);
-  }
-
-  selectShowtime(showtime: Showtime): void {
-    if (showtime.available) {
-      this.selectedShowtime.set(showtime);
-    }
   }
 
   bookTicket(): void {
@@ -376,25 +385,9 @@ export class MovieDetailComponent implements OnInit {
       return;
     }
 
-    // Scroll to showtimes
-    const showtimesSection = document.querySelector('section:has(h2:contains("Showtimes"))');
-    if (showtimesSection) {
-      showtimesSection.scrollIntoView({ behavior: 'smooth' });
-    }
-  }
-
-  proceedToBooking(): void {
     const movie = this.movie();
-    const showtime = this.selectedShowtime();
-
-    if (!this.authService.isAuthenticated()) {
-      this.authService.openLoginModal();
-      return;
-    }
-
-    if (movie && showtime) {
-      this.bookingService.initBooking(movie, showtime);
-      this.router.navigate(['/booking', movie.id]);
+    if (movie && movie.status === 'NOW_SHOWING') {
+      this.toastService.info('Booking', 'Booking feature coming soon');
     }
   }
 }

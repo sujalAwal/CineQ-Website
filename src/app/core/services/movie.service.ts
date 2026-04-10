@@ -1,104 +1,154 @@
-import { Injectable, signal, computed } from '@angular/core';
-import { Movie } from '../models/movie.model';
-import { MOCK_MOVIES } from '../data/mock-movies';
+import { Injectable, signal, computed, effect } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Movie, MovieListResponse, MovieDetailResponse, Genre } from '../models/movie.model';
+import { environment } from '../../../environments/environment';
+import { MasterDataService } from './master-data.service';
+
+export interface MovieSection {
+  statusCode: string;
+  name: string;
+  description: string;
+  movies: Movie[];
+  loading: boolean;
+  error: string | null;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class MovieService {
-  private moviesSignal = signal<Movie[]>(MOCK_MOVIES);
-  private loadingSignal = signal<boolean>(false);
+  private nowShowingSectionSignal = signal<MovieSection>({
+    statusCode: 'NOW_SHOWING',
+    name: '',
+    description: '',
+    movies: [],
+    loading: false,
+    error: null
+  });
 
-  // Computed signals for different movie categories
-  readonly movies = this.moviesSignal.asReadonly();
-  readonly loading = this.loadingSignal.asReadonly();
+  private comingSoonSectionSignal = signal<MovieSection>({
+    statusCode: 'COMING_SOON',
+    name: '',
+    description: '',
+    movies: [],
+    loading: false,
+    error: null
+  });
 
-  readonly nowShowingMovies = computed(() => 
-    this.moviesSignal().filter(movie => movie.status === 'now-showing')
-  );
+  readonly nowShowingSection = this.nowShowingSectionSignal.asReadonly();
+  readonly comingSoonSection = this.comingSoonSectionSignal.asReadonly();
 
-  readonly comingSoonMovies = computed(() => 
-    this.moviesSignal().filter(movie => movie.status === 'coming-soon')
-  );
+  constructor(
+    private http: HttpClient,
+    private masterDataService: MasterDataService
+  ) {
+    // Watch for master data changes and update sections when available
+    effect(() => {
+      const masterData = this.masterDataService.masterData();
+      if (masterData) {
+        this.initializeSections();
+      }
+    });
 
-  constructor() {}
-
-  /**
-   * Get all movies
-   * In future, replace with HTTP call
-   */
-  getAllMovies(): Movie[] {
-    // TODO: Replace with API call
-    // return this.http.get<Movie[]>(`${environment.apiUrl}/movies`);
-    return this.moviesSignal();
+    this.loadMoviesByStatus('NOW_SHOWING');
+    this.loadMoviesByStatus('COMING_SOON');
   }
 
   /**
-   * Get movie by ID
+   * Initialize section metadata from master data
    */
-  getMovieById(id: string): Movie | undefined {
-    // TODO: Replace with API call
-    // return this.http.get<Movie>(`${environment.apiUrl}/movies/${id}`);
-    return this.moviesSignal().find(movie => movie.id === id);
-  }
+  private initializeSections(): void {
+    const nowShowingStatus = this.masterDataService.getStatusByCode('NOW_SHOWING');
+    const comingSoonStatus = this.masterDataService.getStatusByCode('COMING_SOON');
 
-  /**
-   * Get now showing movies
-   */
-  getNowShowingMovies(): Movie[] {
-    return this.nowShowingMovies();
-  }
-
-  /**
-   * Get coming soon movies
-   */
-  getComingSoonMovies(): Movie[] {
-    return this.comingSoonMovies();
-  }
-
-  /**
-   * Search movies by title
-   */
-  searchMovies(query: string): Movie[] {
-    if (!query.trim()) {
-      return this.moviesSignal();
+    if (nowShowingStatus) {
+      this.nowShowingSectionSignal.update(section => ({
+        ...section,
+        name: nowShowingStatus.name,
+        description: nowShowingStatus.description
+      }));
     }
-    const lowerQuery = query.toLowerCase();
-    return this.moviesSignal().filter(movie => 
-      movie.title.toLowerCase().includes(lowerQuery) ||
-      movie.genres.some(genre => genre.toLowerCase().includes(lowerQuery))
-    );
+
+    if (comingSoonStatus) {
+      this.comingSoonSectionSignal.update(section => ({
+        ...section,
+        name: comingSoonStatus.name,
+        description: comingSoonStatus.description
+      }));
+    }
   }
 
   /**
-   * Filter movies by genre
+   * Load movies by status code
    */
-  filterByGenre(genre: string): Movie[] {
-    return this.moviesSignal().filter(movie => 
-      movie.genres.some(g => g.toLowerCase() === genre.toLowerCase())
-    );
+  private loadMoviesByStatus(statusCode: string): void {
+    const section = statusCode === 'NOW_SHOWING' ? this.nowShowingSectionSignal : this.comingSoonSectionSignal;
+    
+    section.update(s => ({ ...s, loading: true, error: null }));
+
+    const url = `${environment.apiUrl}/public/movies?releaseStatus=${statusCode}&size=100`;
+
+    this.http.get<MovieListResponse>(url).subscribe({
+      next: (response) => {
+        if (response?.success && response?.data) {
+          section.update(s => ({
+            ...s,
+            movies: response.data,
+            loading: false,
+            error: null
+          }));
+        } else {
+          section.update(s => ({
+            ...s,
+            loading: false,
+            error: response?.message || 'Failed to load movies'
+          }));
+        }
+      },
+      error: (err) => {
+        console.error(`Error loading ${statusCode} movies:`, err);
+        section.update(s => ({
+          ...s,
+          loading: false,
+          error: 'Failed to load movies'
+        }));
+      }
+    });
   }
 
   /**
-   * Get all unique genres
+   * Get movie by ID from API
+   */
+  getMovieById(id: string): void {
+    this.http
+      .get<MovieDetailResponse>(`${environment.apiUrl}/public/movies/${id}`)
+      .subscribe({
+        next: (response) => {
+          if (response.success) {
+            console.log('Movie details:', response.data);
+          }
+        },
+        error: (err) => {
+          console.error('Error loading movie details:', err);
+        }
+      });
+  }
+
+  /**
+   * Get all unique genres from all sections
    */
   getAllGenres(): string[] {
     const genres = new Set<string>();
-    this.moviesSignal().forEach(movie => {
-      movie.genres.forEach(genre => genres.add(genre));
+    [...this.nowShowingSectionSignal().movies, ...this.comingSoonSectionSignal().movies].forEach((movie: Movie) => {
+      movie.genres?.forEach((genre: Genre) => genres.add(genre.name));
     });
     return Array.from(genres).sort();
   }
 
   /**
-   * Get related movies (same genre, excluding current)
+   * Check if a movie has a valid trailer URL
    */
-  getRelatedMovies(movieId: string, limit: number = 4): Movie[] {
-    const movie = this.getMovieById(movieId);
-    if (!movie) return [];
-
-    return this.moviesSignal()
-      .filter(m => m.id !== movieId && m.genres.some(g => movie.genres.includes(g)))
-      .slice(0, limit);
+  hasTrailer(movie: Movie): boolean {
+    return !!(movie.trailerUrl && movie.trailerUrl.trim() !== '');
   }
 }

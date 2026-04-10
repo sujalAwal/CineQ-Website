@@ -73,7 +73,7 @@ import { BookingDetails } from '../../core/models/booking.model';
                   <!-- Movie Poster -->
                   <div class="w-full md:w-48 h-48 md:h-auto flex-shrink-0">
                     <img 
-                      [src]="booking.movie.posterUrl" 
+                      [src]="booking.movie.poster" 
                       [alt]="booking.movie.title"
                       class="w-full h-full object-cover"
                     >

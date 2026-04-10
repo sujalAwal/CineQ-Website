@@ -296,7 +296,7 @@ import { Seat } from '../../core/models/booking.model';
                 
                 <!-- Movie Info -->
                 <div class="flex space-x-4 mb-6 pb-6 border-b border-dark-700">
-                  <img [src]="bookingService.currentBooking()?.movie?.posterUrl" 
+                  <img [src]="bookingService.currentBooking()?.movie?.poster" 
                        [alt]="bookingService.currentBooking()?.movie?.title"
                        class="w-20 h-28 object-cover rounded-lg">
                   <div>
@@ -400,12 +400,8 @@ export class BookingComponent implements OnInit {
     if (!this.bookingService.currentBooking()) {
       const movieId = this.route.snapshot.params['movieId'];
       if (movieId) {
-        const movie = this.movieService.getMovieById(movieId);
-        if (movie && movie.showtimes.length > 0) {
-          this.bookingService.initBooking(movie, movie.showtimes[0]);
-        } else {
-          this.router.navigate(['/movies']);
-        }
+        // TODO: Implement showtime selection when booking API is ready
+        this.router.navigate(['/movies']);
       } else {
         this.router.navigate(['/movies']);
       }

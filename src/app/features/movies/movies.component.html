@@ -1,10 +1,14 @@
-
-    <div class="min-h-screen bg-dark-950 py-8">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <!-- Header -->
+<div class="min-h-screen bg-dark-950 py-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Now Showing Section -->
+    @if (movieService.nowShowingSection().movies.length > 0) {
+      <div class="mb-16">
+        <!-- Header with dynamic title and description from master data -->
         <div class="mb-8">
-          <h1 class="text-3xl md:text-4xl font-display font-bold text-white mb-2">Now Showing</h1>
-          <p class="text-gray-400">Catch the latest blockbusters in theaters now</p>
+          <h1 class="text-3xl md:text-4xl font-display font-bold text-white mb-2">
+            {{ movieService.nowShowingSection().name }}
+          </h1>
+          <p class="text-gray-400">{{ movieService.nowShowingSection().description }}</p>
         </div>
 
         <!-- Filters -->
@@ -17,21 +21,99 @@
           }
         </div>
 
-        <!-- Movie Grid -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          @for (movie of movieService.nowShowingMovies(); track movie.id) {
-            <app-movie-card [movie]="movie"></app-movie-card>
-          } @empty {
-            <div class="col-span-full text-center py-12">
-              <div class="w-20 h-20 mx-auto mb-4 bg-dark-800 rounded-full flex items-center justify-center">
-                <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/>
-                </svg>
-              </div>
-              <p class="text-gray-400">No movies currently showing</p>
+        <!-- Loading State -->
+        @if (movieService.nowShowingSection().loading) {
+          <div class="col-span-full text-center py-12">
+            <div class="w-20 h-20 mx-auto mb-4 bg-dark-800 rounded-full flex items-center justify-center animate-spin">
+              <svg class="w-10 h-10 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+              </svg>
             </div>
+            <p class="text-gray-400">Loading movies...</p>
+          </div>
+        } @else if (movieService.nowShowingSection().error) {
+          <!-- Error State -->
+          <div class="col-span-full text-center py-12">
+            <div class="w-20 h-20 mx-auto mb-4 bg-dark-800 rounded-full flex items-center justify-center">
+              <svg class="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4v2m0 4v2m0-12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+            <p class="text-red-400">{{ movieService.nowShowingSection().error }}</p>
+          </div>
+        } @else {
+          <!-- Movie Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            @for (movie of movieService.nowShowingSection().movies; track movie.id) {
+              <app-movie-card [movie]="movie"></app-movie-card>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <!-- Coming Soon Section -->
+    @if (movieService.comingSoonSection().movies.length > 0) {
+      <div class="mb-16">
+        <!-- Header with dynamic title and description from master data -->
+        <div class="mb-8">
+          <h1 class="text-3xl md:text-4xl font-display font-bold text-white mb-2">
+            {{ movieService.comingSoonSection().name }}
+          </h1>
+          <p class="text-gray-400">{{ movieService.comingSoonSection().description }}</p>
+        </div>
+
+        <!-- Filters -->
+        <div class="flex flex-wrap gap-3 mb-8">
+          <button class="badge bg-primary-500 text-white px-4 py-2 font-medium">All</button>
+          @for (genre of movieService.getAllGenres(); track genre) {
+            <button class="badge bg-dark-800 text-gray-300 hover:bg-dark-700 px-4 py-2 transition-colors">
+              {{ genre }}
+            </button>
           }
         </div>
+
+        <!-- Loading State -->
+        @if (movieService.comingSoonSection().loading) {
+          <div class="col-span-full text-center py-12">
+            <div class="w-20 h-20 mx-auto mb-4 bg-dark-800 rounded-full flex items-center justify-center animate-spin">
+              <svg class="w-10 h-10 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+              </svg>
+            </div>
+            <p class="text-gray-400">Loading movies...</p>
+          </div>
+        } @else if (movieService.comingSoonSection().error) {
+          <!-- Error State -->
+          <div class="col-span-full text-center py-12">
+            <div class="w-20 h-20 mx-auto mb-4 bg-dark-800 rounded-full flex items-center justify-center">
+              <svg class="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4v2m0 4v2m0-12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+            <p class="text-red-400">{{ movieService.comingSoonSection().error }}</p>
+          </div>
+        } @else {
+          <!-- Movie Grid -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            @for (movie of movieService.comingSoonSection().movies; track movie.id) {
+              <app-movie-card [movie]="movie"></app-movie-card>
+            }
+          </div>
+        }
       </div>
-    </div>
-  
+    }
+
+    <!-- No Movies Found State -->
+    @if (movieService.nowShowingSection().movies.length === 0 && movieService.comingSoonSection().movies.length === 0 && !movieService.nowShowingSection().loading && !movieService.comingSoonSection().loading) {
+      <div class="text-center py-12">
+        <div class="w-20 h-20 mx-auto mb-4 bg-dark-800 rounded-full flex items-center justify-center">
+          <svg class="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/>
+          </svg>
+        </div>
+        <p class="text-gray-400">No movies available</p>
+      </div>
+    }
+  </div>
+</div>

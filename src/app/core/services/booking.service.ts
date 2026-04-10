@@ -1,11 +1,15 @@
-import { Injectable, signal, computed } from '@angular/core';
-import { BookingDetails, Seat, PaymentMethod } from '../models/booking.model';
+import { Injectable, signal, computed, inject } from '@angular/core';
+import { BookingDetails, Seat, PaymentMethod, InitiatePaymentRequest ,PaymentGatewayResponse } from '../models/booking.model';
 import { Movie, Showtime } from '../models/movie.model';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class BookingService {
+
+  private http = inject(HttpClient);
   private currentBookingSignal = signal<Partial<BookingDetails> | null>(null);
   private selectedSeatsSignal = signal<Seat[]>([]);
   private loadingSignal = signal<boolean>(false);
@@ -27,7 +31,7 @@ export class BookingService {
   });
 
   readonly taxes = computed(() => {
-    return Math.round((this.totalAmount() + this.convenienceFee()) * 0.18); // 18% GST
+    return Math.round((this.totalAmount() + this.convenienceFee()) * 0.13); // 13% TAX
   });
 
   readonly grandTotal = computed(() => {
@@ -128,7 +132,19 @@ export class BookingService {
   async confirmBooking(paymentMethodId: string): Promise<BookingDetails> {
     this.loadingSignal.set(true);
 
+    const request: InitiatePaymentRequest = {
+      bookingId: this.currentBookingSignal()?.movie?.title || 'Movie Ticket',
+      amount: this.grandTotal(),
+      paymentMethod: paymentMethodId
+    };
     try {
+      if(paymentMethodId === 'esewa') {
+      await this.initatePayment(request);
+      } else if(paymentMethodId === 'khalti') {
+      } else if(paymentMethodId === 'connectips') {
+      } else {
+        throw new Error('Invalid payment method');
+      }      
       // TODO: Replace with actual API call
       // const response = await this.http.post<BookingDetails>(`${environment.apiUrl}/bookings`, {...}).toPromise();
       
@@ -208,5 +224,25 @@ export class BookingService {
    */
   getBookingById(id: string): BookingDetails | undefined {
     return this.bookingHistorySignal().find(b => b.id === id);
+  }
+
+  async initatePayment(request: InitiatePaymentRequest): Promise<void> {
+    this.http.post<PaymentGatewayResponse>(`${environment.api.baseUrl}/customer/initiate-payment`, request).subscribe({
+        next: (response) => {
+          if (response.success) {
+          console.log("Sucesess Payment Gateway");
+          
+           
+          } else {
+            console.log(response.message ?? 'Failed to load banners.');
+          }
+          this.loadingSignal.set(false);
+        },
+        error: (err) => {
+          console.error('BannerService: Failed to load banners', err);
+          this.loadingSignal.set(false);
+        }
+      });
+    
   }
 }
