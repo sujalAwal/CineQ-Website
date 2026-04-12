@@ -86,6 +86,127 @@
     @apply text-2xl md:text-3xl font-display font-bold mb-6;
   }
 
+  /**
+   * Cinema screen (seat maps): width = 70% of the seat-layout block (sibling rows define parent width).
+   */
+  .cinema-screen {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 70%;
+    max-width: 100%;
+    margin: 0 auto 2.25rem;
+    padding: 0 0.5rem;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* Soft volumetric wash (projector / house lights) */
+  .cinema-screen__ambient {
+    position: absolute;
+    left: 50%;
+    top: -0.35rem;
+    transform: translateX(-50%);
+    width: 125%;
+    height: 6.25rem;
+    z-index: 0;
+    background: radial-gradient(
+      ellipse 70% 52% at 50% 20%,
+      rgba(252, 165, 165, 0.42) 0%,
+      rgba(239, 68, 68, 0.22) 36%,
+      rgba(220, 38, 38, 0.07) 58%,
+      transparent 78%
+    );
+    filter: blur(20px);
+  }
+
+  /* Arc + glow + label share one box so “SCREEN” sits inside the light */
+  .cinema-screen__hull {
+    position: relative;
+    width: 100%;
+    min-height: 6.05rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 1;
+  }
+
+  /* Curved screen silhouette + rim light */
+  .cinema-screen__surface {
+    position: relative;
+    z-index: 2;
+    width: 92%;
+    height: 2.65rem;
+    flex-shrink: 0;
+    border-radius: 0 0 50% 50% / 0 0 92% 92%;
+    background: linear-gradient(
+      180deg,
+      #161018 0%,
+      #26141c 32%,
+      #4c1824 62%,
+      rgba(120, 28, 36, 0.65) 100%
+    );
+    border-bottom: 2px solid rgba(255, 250, 250, 0.72);
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.06),
+      0 6px 28px rgba(239, 68, 68, 0.42),
+      0 22px 52px rgba(185, 28, 28, 0.2),
+      inset 0 2px 3px rgba(255, 255, 255, 0.1),
+      inset 0 -18px 32px -10px rgba(239, 68, 68, 0.32);
+  }
+
+  /* Light pool behind the label, tucked under the curve */
+  .cinema-screen__spill {
+    position: absolute;
+    left: 50%;
+    top: 0.46rem;
+    transform: translateX(-50%);
+    width: 84%;
+    height: 3.35rem;
+    z-index: 1;
+    margin: 0;
+    background: radial-gradient(
+      ellipse 100% 85% at 50% 0%,
+      rgba(254, 202, 202, 0.65) 0%,
+      rgba(239, 68, 68, 0.38) 42%,
+      rgba(185, 28, 28, 0.18) 72%,
+      transparent 100%
+    );
+    filter: blur(14px);
+    opacity: 0.95;
+    pointer-events: none;
+  }
+
+  .cinema-screen__caption {
+    position: absolute;
+    left: 50%;
+    bottom: 2.77rem;
+    transform: translateX(-50%);
+    width: max-content;
+    max-width: 94%;
+    margin: 0;
+    padding-left: 0.34em;
+    text-align: center;
+    z-index: 3;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: #ffffff;
+    line-height: 1.2;
+    text-shadow:
+      0 0 20px rgba(220, 38, 38, 0.75),
+      0 0 32px rgba(239, 68, 68, 0.45),
+      0 2px 6px rgba(0, 0, 0, 0.95),
+      0 1px 0 rgba(0, 0, 0, 0.5);
+
+    @media (min-width: 640px) {
+      font-size: 1.0625rem;
+      letter-spacing: 0.32em;
+    }
+  }
+
   /* Common Portal/Dashboard Styles */
   .btn {
     display: inline-flex;

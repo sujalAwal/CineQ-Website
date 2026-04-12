@@ -41,6 +41,12 @@ export const routes: Routes = [
     title: 'My Bookings - CineQ'
   },
   {
+    path: 'payment/success',
+    loadComponent: () => import('./features/payment-success/payment-success.component').then(m => m.PaymentSuccessComponent),
+    canActivate: [authGuard],
+    title: 'Payment Status - CineQ'
+  },
+  {
     path: 'customer-portal',
     loadComponent: () => import('./features/customer-portal/customer-portal.component').then(m => m.CustomerPortalComponent),
     title: 'Customer Portal - CineQ'

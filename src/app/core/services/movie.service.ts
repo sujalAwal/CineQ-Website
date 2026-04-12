@@ -1,8 +1,56 @@
 import { Injectable, signal, computed, effect } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Movie, MovieListResponse, MovieDetailResponse, Genre } from '../models/movie.model';
+import {
+  Movie,
+  MovieListResponse,
+  MovieDetailResponse,
+  Genre,
+  ShowtimesListResponse,
+  ShowtimeDetailResponse,
+  ShowtimeDetail,
+  SeatTypesResponse,
+  PublicShowtimeBookingsResponse,
+  PublicShowtimeBooking
+} from '../models/movie.model';
 import { environment } from '../../../environments/environment';
 import { MasterDataService } from './master-data.service';
+import { firstValueFrom } from 'rxjs';
+
+/** Block seats from these payment states (held or sold). */
+const BOOKING_PAYMENT_BLOCKS_SEAT = new Set(['INITIATED', 'COMPLETED']);
+
+/**
+ * Overlay taken / in-progress seats onto layout (code → X). Optionally keep some names selectable (e.g. current checkout).
+ */
+export function mergePublicBookingsIntoSeatLayout(
+  detail: ShowtimeDetail,
+  bookings: PublicShowtimeBooking[] | null | undefined,
+  exemptSeatNames?: ReadonlySet<string>
+): ShowtimeDetail {
+  if (!bookings?.length) {
+    return detail;
+  }
+  const blocked = new Set<string>();
+  for (const booking of bookings) {
+    if (!BOOKING_PAYMENT_BLOCKS_SEAT.has(booking.paymentStatus)) {
+      continue;
+    }
+    for (const line of booking.bookingDetails ?? []) {
+      if (line.seatName && !exemptSeatNames?.has(line.seatName)) {
+        blocked.add(line.seatName);
+      }
+    }
+  }
+  if (blocked.size === 0) {
+    return detail;
+  }
+  return {
+    ...detail,
+    seatLayout: detail.seatLayout.map(seat =>
+      blocked.has(seat.seatName) ? { ...seat, code: 'X' } : seat
+    )
+  };
+}
 
 export interface MovieSection {
   statusCode: string;
@@ -152,5 +200,81 @@ export class MovieService {
    */
   hasTrailer(movie: Movie): boolean {
     return !!(movie.trailerUrl && movie.trailerUrl.trim() !== '');
+  }
+
+  /**
+   * Get showtimes for a movie
+   */
+  getShowtimesForMovie(movieId: string): Promise<ShowtimesListResponse> {
+    return this.http
+      .get<ShowtimesListResponse>(`${this.apiUrl}/public/showtimes/movie/${movieId}`)
+      .toPromise()
+      .then((response) => {
+        // Check if data exists (API may return success:false but still have data)
+        if (response?.data && Array.isArray(response.data)) {
+          return response;
+        }
+        throw new Error('No showtimes available');
+      })
+      .catch((err) => {
+        console.error('Error loading showtimes:', err);
+        throw err;
+      });
+  }
+
+  /**
+   * Get seat layout for a specific showtime
+   */
+  getShowtimeDetail(showtimeId: string): Promise<ShowtimeDetailResponse> {
+    return this.http
+      .get<ShowtimeDetailResponse>(`${this.apiUrl}/public/showtimes/${showtimeId}`)
+      .toPromise()
+      .then((response) => {
+        if (response?.data) {
+          return response;
+        }
+        throw new Error('Failed to load showtime details');
+      })
+      .catch((err) => {
+        console.error('Error loading showtime details:', err);
+        throw err;
+      });
+  }
+
+  /**
+   * Public: seats tied to in-progress or completed payments for this showtime.
+   * POST body is empty; same showtime id as GET layout.
+   */
+  getShowtimePublicBookings(showtimeId: string): Promise<PublicShowtimeBookingsResponse> {
+    return firstValueFrom(
+      this.http.post<PublicShowtimeBookingsResponse>(
+        `${this.apiUrl}/public/showtimes/${showtimeId}/bookings`,
+        {}
+      )
+    ).then((response) => {
+      if (response?.success && Array.isArray(response.data)) {
+        return response;
+      }
+      throw new Error(response?.message || 'Failed to load showtime bookings');
+    });
+  }
+
+  /**
+   * Get all seat types
+   */
+  getSeatTypes(): Promise<SeatTypesResponse> {
+    return this.http
+      .get<SeatTypesResponse>(`${this.apiUrl}/public/seat-types`)
+      .toPromise()
+      .then((response) => {
+        if (response?.data && Array.isArray(response.data)) {
+          return response;
+        }
+        throw new Error('Failed to load seat types');
+      })
+      .catch((err) => {
+        console.error('Error loading seat types:', err);
+        throw err;
+      });
   }
 }

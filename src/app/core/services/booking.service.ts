@@ -1,8 +1,18 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
-import { BookingDetails, Seat, PaymentMethod, InitiatePaymentRequest ,PaymentGatewayResponse } from '../models/booking.model';
+import {
+  BookingDetails,
+  BookingSeat,
+  PaymentMethod,
+  SeatPayload,
+  ApiPaymentMethod,
+  InitiatePaymentApiRequest,
+  InitiatePaymentApiResponseData,
+  BookingApiResponse
+} from '../models/booking.model';
 import { Movie, Showtime } from '../models/movie.model';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { firstValueFrom } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -11,7 +21,7 @@ export class BookingService {
 
   private http = inject(HttpClient);
   private currentBookingSignal = signal<Partial<BookingDetails> | null>(null);
-  private selectedSeatsSignal = signal<Seat[]>([]);
+  private selectedSeatsSignal = signal<BookingSeat[]>([]);
   private loadingSignal = signal<boolean>(false);
   private bookingHistorySignal = signal<BookingDetails[]>([]);
 
@@ -45,10 +55,6 @@ export class BookingService {
     { id: 'connectips', type: 'netbanking', name: 'ConnectIPS', icon: 'building-library' }
   ];
 
-  constructor() {
-    this.loadBookingHistory();
-  }
-
   /**
    * Initialize a new booking
    */
@@ -56,9 +62,10 @@ export class BookingService {
     this.currentBookingSignal.set({
       movie,
       showtime: {
-        date: showtime.date,
-        time: showtime.time,
-        theater: showtime.theater
+        date: showtime.showDate,
+        time: showtime.showTime,
+        theater: showtime.theater.name,
+        screen: showtime.screen.title
       },
       seats: [],
       totalAmount: 0,
@@ -74,15 +81,15 @@ export class BookingService {
   /**
    * Generate seats for a theater
    */
-  generateSeats(rows: number = 8, seatsPerRow: number = 12): Seat[] {
-    const seats: Seat[] = [];
+  generateSeats(rows: number = 8, seatsPerRow: number = 12): BookingSeat[] {
+    const seats: BookingSeat[] = [];
     const rowLabels = 'ABCDEFGHIJKLMNOP'.split('');
-    
+
     for (let r = 0; r < rows; r++) {
       for (let s = 1; s <= seatsPerRow; s++) {
         const type = r < 2 ? 'standard' : r < 5 ? 'premium' : 'vip';
         const price = type === 'standard' ? 200 : type === 'premium' ? 300 : 450;
-        
+
         seats.push({
           id: `${rowLabels[r]}${s}`,
           row: rowLabels[r],
@@ -94,24 +101,22 @@ export class BookingService {
         });
       }
     }
-    
+
     return seats;
   }
 
   /**
    * Select/Deselect a seat
    */
-  toggleSeatSelection(seat: Seat): void {
+  toggleSeatSelection(seat: BookingSeat): void {
     if (!seat.isAvailable) return;
 
     const currentSeats = this.selectedSeatsSignal();
     const existingIndex = currentSeats.findIndex(s => s.id === seat.id);
 
     if (existingIndex >= 0) {
-      // Remove seat
       this.selectedSeatsSignal.set(currentSeats.filter(s => s.id !== seat.id));
     } else {
-      // Add seat (max 10 seats per booking)
       if (currentSeats.length < 10) {
         this.selectedSeatsSignal.set([...currentSeats, { ...seat, isSelected: true }]);
       }
@@ -126,68 +131,141 @@ export class BookingService {
   }
 
   /**
-   * Process payment and confirm booking
-   * Simulates API call
+   * Update selected seats directly (used when coming from movie detail)
    */
-  async confirmBooking(paymentMethodId: string): Promise<BookingDetails> {
+  updateSelectedSeats(seats: BookingSeat[]): void {
+    this.selectedSeatsSignal.set(seats);
+  }
+
+  /**
+   * Initiate payment + booking in one atomic call.
+   * For gateway methods (eSewa / Khalti) the browser navigates away —
+   * this promise never resolves in those cases.
+   */
+  async confirmBooking(paymentMethodId: string, showtimeId: string | null): Promise<BookingDetails> {
     this.loadingSignal.set(true);
 
-    const request: InitiatePaymentRequest = {
-      bookingId: this.currentBookingSignal()?.movie?.title || 'Movie Ticket',
-      amount: this.grandTotal(),
-      paymentMethod: paymentMethodId
-    };
     try {
-      if(paymentMethodId === 'esewa') {
-      await this.initatePayment(request);
-      } else if(paymentMethodId === 'khalti') {
-      } else if(paymentMethodId === 'connectips') {
-      } else {
-        throw new Error('Invalid payment method');
-      }      
-      // TODO: Replace with actual API call
-      // const response = await this.http.post<BookingDetails>(`${environment.apiUrl}/bookings`, {...}).toPromise();
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
-
-      const booking = this.currentBookingSignal();
-      if (!booking || !booking.movie) {
-        throw new Error('No booking in progress');
+      if (!showtimeId) {
+        throw new Error('Showtime ID is required');
       }
 
-      const confirmedBooking: BookingDetails = {
-        id: 'BK' + Date.now(),
-        movie: booking.movie,
-        showtime: booking.showtime!,
-        seats: this.selectedSeatsSignal(),
-        totalAmount: this.totalAmount(),
-        convenienceFee: this.convenienceFee(),
-        taxes: this.taxes(),
-        grandTotal: this.grandTotal(),
-        status: 'confirmed',
-        createdAt: new Date()
+      const selectedSeats = this.selectedSeatsSignal();
+      if (!selectedSeats.length) {
+        throw new Error('No seats selected');
+      }
+
+      // Build seats payload (NO price — server resolves from showtime)
+      const seatsPayload: SeatPayload[] = selectedSeats.map(seat => ({
+        seatName: seat.id,
+        row: seat.row,
+        col: seat.number,
+        code: seat.type === 'vip' ? 'V' : seat.type === 'premium' ? 'P' : 'R'
+      }));
+
+      // Convert to UPPERCASE enum value expected by backend
+      const apiPaymentMethod = paymentMethodId.toUpperCase() as ApiPaymentMethod;
+
+      const request: InitiatePaymentApiRequest = {
+        showtimeId,
+        seats: seatsPayload,
+        paymentMethod: apiPaymentMethod
       };
 
-      // Add to booking history
-      const history = this.bookingHistorySignal();
-      this.bookingHistorySignal.set([confirmedBooking, ...history]);
-      this.saveBookingHistory();
+      const response = await firstValueFrom(
+        this.http.post<{ success: boolean; message: string; data: InitiatePaymentApiResponseData }>(
+          `${environment.api.baseUrl}/customer/initiate-payment`,
+          request
+        )
+      );
 
-      // Clear current booking
-      this.currentBookingSignal.set(null);
-      this.selectedSeatsSignal.set([]);
+      if (!response.success || !response.data) {
+        throw new Error(response.message || 'Payment initiation failed');
+      }
 
-      return confirmedBooking;
-    } catch (error) {
-      throw new Error('Payment failed. Please try again.');
+      const data = response.data;
+
+      if (data.formActionUrl && data.formFields) {
+        // eSewa: build a hidden POST form and auto-submit it
+        this.submitHiddenForm(data.formActionUrl, data.formFields);
+        // Page navigates away — return a never-resolving promise
+        return new Promise<BookingDetails>(() => {});
+      }
+
+      if (data.paymentUrl) {
+        // Khalti: redirect the user to the payment page
+        window.location.href = data.paymentUrl;
+        return new Promise<BookingDetails>(() => {});
+      }
+
+      throw new Error('No payment gateway URL received from server');
+
+    } catch (error: any) {
+      const msg = error?.error?.message || error?.message || 'Payment failed. Please try again.';
+      throw new Error(msg);
     } finally {
       this.loadingSignal.set(false);
     }
   }
 
   /**
-   * Cancel current booking
+   * Verify eSewa payment after redirect back from gateway.
+   * Call with the base64-encoded ?data= param from the eSewa redirect URL.
+   */
+  async verifyEsewaPayment(data: string): Promise<BookingApiResponse> {
+    const response = await firstValueFrom(
+      this.http.post<{ success: boolean; message: string; data: BookingApiResponse }>(
+        `${environment.api.baseUrl}/customer/payment/verify/esewa`,
+        { data }
+      )
+    );
+    if (!response.success || !response.data) {
+      throw new Error(response.message || 'eSewa payment verification failed');
+    }
+    return response.data;
+  }
+
+  /**
+   * Verify Khalti payment after redirect back from gateway.
+   * Call with the ?pidx= param from the Khalti redirect URL.
+   */
+  async verifyKhaltiPayment(pidx: string): Promise<BookingApiResponse> {
+    const response = await firstValueFrom(
+      this.http.post<{ success: boolean; message: string; data: BookingApiResponse }>(
+        `${environment.api.baseUrl}/customer/payment/verify/khalti`,
+        { pidx }
+      )
+    );
+    if (!response.success || !response.data) {
+      throw new Error(response.message || 'Khalti payment verification failed');
+    }
+    return response.data;
+  }
+
+  /**
+   * Load the current customer's bookings from the API and populate the history signal.
+   */
+  async getMyBookings(): Promise<BookingDetails[]> {
+    this.loadingSignal.set(true);
+    try {
+      const response = await firstValueFrom(
+        this.http.get<{ success: boolean; message: string; data: BookingApiResponse[] }>(
+          `${environment.api.baseUrl}/customer/bookings`
+        )
+      );
+      if (response.success && response.data) {
+        const bookings = response.data.map(b => this.mapApiBookingToDetails(b));
+        this.bookingHistorySignal.set(bookings);
+        return bookings;
+      }
+      return [];
+    } finally {
+      this.loadingSignal.set(false);
+    }
+  }
+
+  /**
+   * Cancel current booking (UI state only — does not call API)
    */
   cancelBooking(): void {
     this.currentBookingSignal.set(null);
@@ -195,54 +273,78 @@ export class BookingService {
   }
 
   /**
-   * Load booking history from localStorage
-   */
-  private loadBookingHistory(): void {
-    try {
-      const stored = localStorage.getItem('cineq_booking_history');
-      if (stored) {
-        this.bookingHistorySignal.set(JSON.parse(stored));
-      }
-    } catch (error) {
-      console.error('Error loading booking history:', error);
-    }
-  }
-
-  /**
-   * Save booking history to localStorage
-   */
-  private saveBookingHistory(): void {
-    try {
-      localStorage.setItem('cineq_booking_history', JSON.stringify(this.bookingHistorySignal()));
-    } catch (error) {
-      console.error('Error saving booking history:', error);
-    }
-  }
-
-  /**
-   * Get booking by ID
+   * Get booking by ID from local history signal
    */
   getBookingById(id: string): BookingDetails | undefined {
     return this.bookingHistorySignal().find(b => b.id === id);
   }
 
-  async initatePayment(request: InitiatePaymentRequest): Promise<void> {
-    this.http.post<PaymentGatewayResponse>(`${environment.api.baseUrl}/customer/initiate-payment`, request).subscribe({
-        next: (response) => {
-          if (response.success) {
-          console.log("Sucesess Payment Gateway");
-          
-           
-          } else {
-            console.log(response.message ?? 'Failed to load banners.');
-          }
-          this.loadingSignal.set(false);
-        },
-        error: (err) => {
-          console.error('BannerService: Failed to load banners', err);
-          this.loadingSignal.set(false);
-        }
-      });
-    
+  // ─────────────────────────────────────────────────────────────────────────
+  // Private helpers
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /** Map API booking response to local BookingDetails shape */
+  private mapApiBookingToDetails(api: BookingApiResponse): BookingDetails {
+    const seatStatusToStatus = (code?: number): 'confirmed' | 'pending' | 'cancelled' => {
+      if (code === 2) return 'confirmed';
+      if (code === 3) return 'pending';
+      return 'cancelled';
+    };
+
+    const seats: BookingSeat[] = (api.bookingDetails ?? []).map(detail => ({
+      id: detail.seatName,
+      row: detail.row,
+      number: detail.col,
+      type: detail.seatCode === 'V' ? 'vip' : detail.seatCode === 'P' ? 'premium' : 'standard',
+      price: detail.seatPrice ?? 0,
+      isAvailable: false,
+      isSelected: true
+    }));
+
+    return {
+      id: api.bookingReference,
+      expiresAt: api.expiresAt,
+      numberOfSeats: api.numberOfSeats,
+      movie: {
+        id: api.movieId ?? '',
+        title: api.movieTitle ?? 'Unknown Movie',
+        poster: api.moviePoster ?? '',
+        duration: 0,
+        releaseDate: '',
+        status: '',
+        genres: []
+      },
+      showtime: {
+        date: api.showDate ?? '',
+        time: api.showTime ?? '',
+        theater: api.theatreName ?? '',
+        screen: api.screenName ?? ''
+      },
+      seats,
+      totalAmount: api.totalAmount ?? 0,
+      convenienceFee: 0,
+      taxes: 0,
+      grandTotal: api.totalAmount ?? 0,
+      status: seatStatusToStatus(api.seatStatusCode),
+      createdAt: new Date(api.bookingDate ?? Date.now())
+    };
+  }
+
+  /** Build and auto-submit a hidden POST form (for eSewa gateway) */
+  private submitHiddenForm(actionUrl: string, formFields: Record<string, string>): void {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = actionUrl;
+
+    Object.entries(formFields).forEach(([name, value]) => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = name;
+      input.value = value;
+      form.appendChild(input);
+    });
+
+    document.body.appendChild(form);
+    form.submit();
   }
 }

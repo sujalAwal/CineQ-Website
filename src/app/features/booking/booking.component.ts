@@ -2,9 +2,10 @@ import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { BookingService } from '../../core/services/booking.service';
-import { MovieService } from '../../core/services/movie.service';
+import { MovieService, mergePublicBookingsIntoSeatLayout } from '../../core/services/movie.service';
 import { ToastService } from '../../core/services/toast.service';
-import { Seat } from '../../core/models/booking.model';
+import { BookingSeat } from '../../core/models/booking.model';
+import { Seat, SeatType, ShowtimeDetail, PublicShowtimeBookingsResponse } from '../../core/models/movie.model';
 
 @Component({
   selector: 'app-booking',
@@ -64,97 +65,258 @@ import { Seat } from '../../core/models/booking.model';
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- Main Content -->
             <div class="lg:col-span-2">
-              <!-- Step 1: Seat Selection -->
+              <!-- Step 1: Seat selection (mock) or read-only review (same layout as movie detail) -->
               @if (currentStep() === 1) {
                 <div class="card p-6 animate-fade-in">
-                  <h2 class="text-xl font-semibold text-white mb-6">Select Your Seats</h2>
-                  
-                  <!-- Screen -->
-                  <div class="relative mb-8">
-                    <div class="h-2 bg-gradient-to-r from-transparent via-primary-500 to-transparent rounded-full mb-2"></div>
-                    <div class="text-center text-sm text-gray-400">SCREEN</div>
-                  </div>
+                  <h2 class="text-xl font-semibold text-white mb-6">{{ showtimeId() ? 'Review your seats' : 'Select Your Seats' }}</h2>
 
-                  <!-- Seat Legend -->
-                  <div class="flex flex-wrap justify-center gap-6 mb-8 text-sm">
-                    <div class="flex items-center space-x-2">
-                      <div class="w-6 h-6 rounded bg-dark-600 border border-dark-500"></div>
-                      <span class="text-gray-400">Available</span>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                      <div class="w-6 h-6 rounded bg-primary-500"></div>
-                      <span class="text-gray-400">Selected</span>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                      <div class="w-6 h-6 rounded bg-dark-800"></div>
-                      <span class="text-gray-400">Sold</span>
-                    </div>
-                  </div>
+                  @if (showtimeId()) {
+                    @if (seatsLoading()) {
+                      <div class="flex justify-center py-12">
+                        <div class="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                      </div>
+                    } @else if (seatLayout()) {
+                      <div class="space-y-8">
+                        <div class="bg-dark-800/50 p-4 rounded-lg border border-dark-700">
+                          <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                            <div>
+                              <p class="text-gray-400">Format</p>
+                              <p class="font-semibold text-white">{{ seatLayout()!.format }}</p>
+                            </div>
+                            <div>
+                              <p class="text-gray-400">Language</p>
+                              <p class="font-semibold text-white">{{ seatLayout()!.language }}</p>
+                            </div>
+                            <div>
+                              <p class="text-gray-400">Time</p>
+                              <p class="font-semibold text-white">{{ seatLayout()!.showTime }}</p>
+                            </div>
+                            <div>
+                              <p class="text-gray-400">Screen</p>
+                              <p class="font-semibold text-white">{{ bookingService.currentBooking()?.showtime?.screen }}</p>
+                            </div>
+                          </div>
+                        </div>
 
-                  <!-- Seat Types Info -->
-                  <div class="flex flex-wrap justify-center gap-6 mb-8 text-sm">
-                    <div class="flex items-center space-x-2">
-                      <div class="w-6 h-6 rounded bg-green-500/20 border border-green-500/50"></div>
-                      <span class="text-gray-400">Standard (₹200)</span>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                      <div class="w-6 h-6 rounded bg-blue-500/20 border border-blue-500/50"></div>
-                      <span class="text-gray-400">Premium (₹300)</span>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                      <div class="w-6 h-6 rounded bg-yellow-500/20 border border-yellow-500/50"></div>
-                      <span class="text-gray-400">VIP (₹450)</span>
-                    </div>
-                  </div>
+                        <div class="flex flex-wrap gap-6 justify-center">
+                          <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-green-600 rounded border border-green-500 flex items-center justify-center">
+                              <span class="text-white text-xs font-bold">V</span>
+                            </div>
+                            <span class="text-sm text-gray-300">Available</span>
+                          </div>
+                          <div class="flex items-center space-x-2">
+                            <div class="w-8 h-8 bg-gray-600 rounded border border-gray-500 flex items-center justify-center">
+                              <span class="text-white text-xs font-bold">X</span>
+                            </div>
+                            <span class="text-sm text-gray-300">Not Available</span>
+                          </div>
+                        </div>
 
-                  <!-- Seat Grid -->
-                  <div class="overflow-x-auto">
-                    <div class="min-w-[500px] flex flex-col items-center space-y-2">
-                      @for (row of groupedSeats(); track row.row) {
-                        <div class="flex items-center space-x-2">
-                          <span class="w-6 text-center text-sm font-medium text-gray-400">{{ row.row }}</span>
-                          <div class="flex space-x-2">
-                            @for (seat of row.seats; track seat.id; let i = $index) {
-                              @if (i === 6) {
-                                <div class="w-4"></div>
+                        <div class="overflow-x-auto">
+                          <div class="inline-block min-w-full bg-dark-800/30 p-6 rounded-lg">
+                            <div class="cinema-screen">
+                              <div class="cinema-screen__ambient" aria-hidden="true"></div>
+                              <div class="cinema-screen__hull">
+                                <div class="cinema-screen__surface" aria-hidden="true"></div>
+                                <div class="cinema-screen__spill" aria-hidden="true"></div>
+                                <p class="cinema-screen__caption">Screen</p>
+                              </div>
+                            </div>
+
+                            <div class="space-y-2">
+                              @for (seatRow of getSeatRows(); track seatRow[0]?.row) {
+                                <div class="flex justify-center gap-2">
+                                  <div class="w-6 flex items-center justify-center text-xs font-bold text-gray-500">
+                                    {{ seatRow[0]?.row }}
+                                  </div>
+
+                                  @for (seat of seatRow; track seat.seatName) {
+                                    @if (getSeatTypeByCode(seat.code); as seatType) {
+                                      <div
+                                        class="w-8 h-8 rounded text-xs font-bold text-white border origin-center flex items-center justify-center select-none pointer-events-none"
+                                        [class.opacity-50]="seat.code === 'X'"
+                                        [class.ring-4]="isUserSeat(seat.seatName)"
+                                        [class.ring-red-500]="isUserSeat(seat.seatName)"
+                                        [class.scale-125]="isUserSeat(seat.seatName)"
+                                        [style.background-color]="seatType.color"
+                                        [style.border-color]="seatType.color"
+                                        [attr.title]="getSeatTooltip(seat)"
+                                        [attr.aria-label]="getSeatAriaLabel(seat)"
+                                      >
+                                        {{ getSeatCellLabel(seat) }}
+                                      </div>
+                                    }
+                                  }
+
+                                  <div class="w-6 flex items-center justify-center text-xs font-bold text-gray-500">
+                                    {{ seatRow[0]?.row }}
+                                  </div>
+                                </div>
                               }
-                              <button (click)="toggleSeat(seat)"
-                                      [disabled]="!seat.isAvailable"
-                                      class="w-8 h-8 rounded text-xs font-medium transition-all duration-200 disabled:cursor-not-allowed"
-                                      [class]="getSeatClass(seat)">
-                                {{ seat.number }}
-                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        @if (seatLayout()!.pricePerLayout.length) {
+                          <div class="bg-dark-800/50 p-4 rounded-lg border border-dark-700">
+                            <p class="text-sm font-semibold text-gray-300 mb-3">Price Guide:</p>
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                              @for (price of seatLayout()!.pricePerLayout; track price.code) {
+                                @if (getSeatTypeByCode(price.code); as seatType) {
+                                  <div class="flex items-center space-x-2">
+                                    <div class="w-6 h-6 rounded flex items-center justify-center text-xs font-bold text-white"
+                                      [style.background-color]="seatType.color">
+                                      {{ seatType.code }}
+                                    </div>
+                                    <div class="flex flex-col">
+                                      <span class="text-gray-200 font-medium">{{ seatType.name }}</span>
+                                      <span class="text-gray-400">₹{{ price.basePrice }}</span>
+                                    </div>
+                                  </div>
+                                }
+                              }
+                            </div>
+                          </div>
+                        }
+
+                        @if (bookingService.selectedSeats().length > 0) {
+                          <div class="bg-dark-800/50 p-4 rounded-lg border border-primary-500/30">
+                            <p class="text-sm font-semibold text-gray-300 mb-3">Your seats ({{ bookingService.selectedSeats().length }}):</p>
+                            <div class="flex flex-wrap gap-2">
+                              @for (seatName of selectedSeatNames(); track seatName) {
+                                @if (getSeatTypeByCode(getSelectedSeatCode(seatName)); as seatType) {
+                                  <div class="flex items-center space-x-2 bg-dark-700 px-3 py-1 rounded-full border border-primary-500/50">
+                                    <div class="w-5 h-5 rounded flex items-center justify-center text-xs font-bold text-white"
+                                      [style.background-color]="seatType.color">
+                                      {{ seatType.code }}
+                                    </div>
+                                    <span class="text-gray-200 text-sm font-medium">{{ seatName }}</span>
+                                  </div>
+                                }
+                              }
+                            </div>
+                          </div>
+                        }
+
+                        <div class="flex justify-end">
+                          <button (click)="nextStep()"
+                                  [disabled]="bookingService.selectedSeats().length === 0"
+                                  class="btn-primary py-3 px-8 disabled:opacity-50 disabled:cursor-not-allowed">
+                            Continue to Payment
+                          </button>
+                        </div>
+                      </div>
+                    } @else {
+                      <p class="text-amber-400/90 text-sm mb-4">Seat map could not be loaded. You can still continue with your selected seats.</p>
+                      @if (bookingService.selectedSeats().length > 0) {
+                        <div class="bg-dark-800/50 p-4 rounded-lg border border-primary-500/30 mb-8">
+                          <p class="text-sm font-semibold text-gray-300 mb-3">Your seats ({{ bookingService.selectedSeats().length }}):</p>
+                          <div class="flex flex-wrap gap-2">
+                            @for (seat of bookingService.selectedSeats(); track seat.id) {
+                              <div class="flex items-center space-x-2 bg-dark-700 px-3 py-1 rounded-full border border-primary-500/50">
+                                <span class="text-gray-200 text-sm font-medium">{{ seat.id }}</span>
+                                <span class="text-gray-400 text-xs">₹{{ seat.price }}</span>
+                              </div>
                             }
                           </div>
-                          <span class="w-6 text-center text-sm font-medium text-gray-400">{{ row.row }}</span>
                         </div>
                       }
-                    </div>
-                  </div>
-
-                  <!-- Selected Seats Summary -->
-                  @if (bookingService.selectedSeats().length > 0) {
-                    <div class="mt-8 p-4 bg-dark-800 rounded-lg">
-                      <div class="flex items-center justify-between">
-                        <div>
-                          <span class="text-gray-400">Selected Seats: </span>
-                          <span class="text-white font-medium">{{ formatSelectedSeats() }}</span>
-                        </div>
-                        <button (click)="bookingService.clearSelectedSeats()" class="text-red-400 hover:text-red-300 text-sm">
-                          Clear All
+                      <div class="flex justify-end">
+                        <button (click)="nextStep()"
+                                [disabled]="bookingService.selectedSeats().length === 0"
+                                class="btn-primary py-3 px-8 disabled:opacity-50 disabled:cursor-not-allowed">
+                          Continue to Payment
                         </button>
                       </div>
+                    }
+                  } @else {
+                    <div class="flex flex-wrap justify-center gap-6 mb-8 text-sm">
+                      <div class="flex items-center space-x-2">
+                        <div class="w-6 h-6 rounded bg-dark-600 border border-dark-500"></div>
+                        <span class="text-gray-400">Available</span>
+                      </div>
+                      <div class="flex items-center space-x-2">
+                        <div class="w-6 h-6 rounded bg-primary-500"></div>
+                        <span class="text-gray-400">Selected</span>
+                      </div>
+                      <div class="flex items-center space-x-2">
+                        <div class="w-6 h-6 rounded bg-dark-800"></div>
+                        <span class="text-gray-400">Sold</span>
+                      </div>
+                    </div>
+
+                    <div class="flex flex-wrap justify-center gap-6 mb-8 text-sm">
+                      <div class="flex items-center space-x-2">
+                        <div class="w-6 h-6 rounded bg-green-500/20 border border-green-500/50"></div>
+                        <span class="text-gray-400">Standard (₹200)</span>
+                      </div>
+                      <div class="flex items-center space-x-2">
+                        <div class="w-6 h-6 rounded bg-blue-500/20 border border-blue-500/50"></div>
+                        <span class="text-gray-400">Premium (₹300)</span>
+                      </div>
+                      <div class="flex items-center space-x-2">
+                        <div class="w-6 h-6 rounded bg-yellow-500/20 border border-yellow-500/50"></div>
+                        <span class="text-gray-400">VIP (₹450)</span>
+                      </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                      <div class="inline-block min-w-full bg-dark-800/30 p-6 rounded-lg">
+                        <div class="cinema-screen">
+                          <div class="cinema-screen__ambient" aria-hidden="true"></div>
+                          <div class="cinema-screen__hull">
+                            <div class="cinema-screen__surface" aria-hidden="true"></div>
+                            <div class="cinema-screen__spill" aria-hidden="true"></div>
+                            <p class="cinema-screen__caption">Screen</p>
+                          </div>
+                        </div>
+                        <div class="min-w-[500px] flex flex-col items-center space-y-2">
+                        @for (row of groupedSeats(); track row.row) {
+                          <div class="flex items-center space-x-2">
+                            <span class="w-6 text-center text-sm font-medium text-gray-400">{{ row.row }}</span>
+                            <div class="flex space-x-2">
+                              @for (seat of row.seats; track seat.id; let i = $index) {
+                                @if (i === 6) {
+                                  <div class="w-4"></div>
+                                }
+                                <button (click)="toggleSeat(seat)"
+                                        [disabled]="!seat.isAvailable"
+                                        class="w-8 h-8 rounded text-xs font-medium transition-all duration-200 disabled:cursor-not-allowed"
+                                        [class]="getSeatClass(seat)">
+                                  {{ seat.number }}
+                                </button>
+                              }
+                            </div>
+                            <span class="w-6 text-center text-sm font-medium text-gray-400">{{ row.row }}</span>
+                          </div>
+                        }
+                        </div>
+                      </div>
+                    </div>
+
+                    @if (bookingService.selectedSeats().length > 0) {
+                      <div class="mt-8 p-4 bg-dark-800 rounded-lg">
+                        <div class="flex items-center justify-between">
+                          <div>
+                            <span class="text-gray-400">Selected Seats: </span>
+                            <span class="text-white font-medium">{{ formatSelectedSeats() }}</span>
+                          </div>
+                          <button (click)="bookingService.clearSelectedSeats()" class="text-red-400 hover:text-red-300 text-sm">
+                            Clear All
+                          </button>
+                        </div>
+                      </div>
+                    }
+
+                    <div class="mt-8 flex justify-end">
+                      <button (click)="nextStep()"
+                              [disabled]="bookingService.selectedSeats().length === 0"
+                              class="btn-primary py-3 px-8 disabled:opacity-50 disabled:cursor-not-allowed">
+                        Continue to Payment
+                      </button>
                     </div>
                   }
-
-                  <!-- Continue Button -->
-                  <div class="mt-8 flex justify-end">
-                    <button (click)="nextStep()" 
-                            [disabled]="bookingService.selectedSeats().length === 0"
-                            class="btn-primary py-3 px-8 disabled:opacity-50 disabled:cursor-not-allowed">
-                      Continue to Payment
-                    </button>
-                  </div>
                 </div>
               }
 
@@ -369,16 +531,20 @@ export class BookingComponent implements OnInit {
   currentStep = signal(1);
   selectedPaymentMethod = signal<string | null>(null);
   confirmedBookingId = signal<string | null>(null);
-  seats = signal<Seat[]>([]);
+  seats = signal<BookingSeat[]>([]);
+  showtimeId = signal<string | null>(null);
+  seatLayout = signal<ShowtimeDetail | null>(null);
+  seatTypes = signal<SeatType[]>([]);
+  seatsLoading = signal(false);
 
   steps = [
-    { id: 1, name: 'Select Seats' },
+    { id: 1, name: 'Seats' },
     { id: 2, name: 'Payment' },
     { id: 3, name: 'Confirmation' }
   ];
 
   groupedSeats = computed(() => {
-    const seatsByRow: { [key: string]: Seat[] } = {};
+    const seatsByRow: { [key: string]: BookingSeat[] } = {};
     
     for (const seat of this.seats()) {
       if (!seatsByRow[seat.row]) {
@@ -392,15 +558,28 @@ export class BookingComponent implements OnInit {
       .map(row => ({ row, seats: seatsByRow[row] }));
   });
 
-  ngOnInit(): void {
-    // Generate seats
-    this.seats.set(this.bookingService.generateSeats());
+  /** Sorted seat names for chip list (matches movie-detail ordering). */
+  selectedSeatNames = computed(() =>
+    this.bookingService
+      .selectedSeats()
+      .map(s => s.id)
+      .sort()
+  );
 
-    // Check if booking exists
+  ngOnInit(): void {
+    const state = window.history.state;
+
+    if (state && state['showtimeId'] && state['seatNames']) {
+      this.showtimeId.set(state['showtimeId']);
+      void this.loadSeatTypes();
+      void this.loadSeatLayout(state['showtimeId']);
+    } else {
+      this.seats.set(this.bookingService.generateSeats());
+    }
+
     if (!this.bookingService.currentBooking()) {
       const movieId = this.route.snapshot.params['movieId'];
       if (movieId) {
-        // TODO: Implement showtime selection when booking API is ready
         this.router.navigate(['/movies']);
       } else {
         this.router.navigate(['/movies']);
@@ -408,7 +587,98 @@ export class BookingComponent implements OnInit {
     }
   }
 
-  getSeatClass(seat: Seat): string {
+  private async loadSeatLayout(showtimeId: string): Promise<void> {
+    this.seatsLoading.set(true);
+    try {
+      const exempt = new Set(this.bookingService.selectedSeats().map(s => s.id));
+      const [detailRes, bookingsRes] = await Promise.all([
+        this.movieService.getShowtimeDetail(showtimeId),
+        this.movieService.getShowtimePublicBookings(showtimeId).catch((e) => {
+          console.warn('Showtime bookings overlay skipped:', e);
+          return { success: true, message: '', data: [] } as PublicShowtimeBookingsResponse;
+        })
+      ]);
+      if (detailRes.data) {
+        const merged = mergePublicBookingsIntoSeatLayout(
+          detailRes.data,
+          bookingsRes.data,
+          exempt
+        );
+        this.seatLayout.set(merged);
+      }
+    } catch (err) {
+      console.error('Error loading seat layout:', err);
+    } finally {
+      this.seatsLoading.set(false);
+    }
+  }
+
+  private async loadSeatTypes(): Promise<void> {
+    try {
+      const response = await this.movieService.getSeatTypes();
+      if (response.data?.length) {
+        this.seatTypes.set(response.data);
+      }
+    } catch (err) {
+      console.error('Error loading seat types:', err);
+    }
+  }
+
+  getSeatRows(): Seat[][] {
+    const layout = this.seatLayout();
+    if (!layout?.seatLayout?.length) {
+      return [];
+    }
+    const rowMap = new Map<string, Seat[]>();
+    layout.seatLayout.forEach(seat => {
+      if (!rowMap.has(seat.row)) {
+        rowMap.set(seat.row, []);
+      }
+      rowMap.get(seat.row)!.push(seat);
+    });
+    return Array.from(rowMap.values())
+      .sort((a, b) => (a[0]?.row || '').localeCompare(b[0]?.row || ''))
+      .map(row => row.sort((a, b) => a.col - b.col));
+  }
+
+  getSeatTypeByCode(code: string): SeatType | undefined {
+    return this.seatTypes().find(st => st.code === code);
+  }
+
+  getSelectedSeatCode(seatName: string): string {
+    const layout = this.seatLayout();
+    if (!layout?.seatLayout) {
+      return 'X';
+    }
+    const seat = layout.seatLayout.find(s => s.seatName === seatName);
+    return seat?.code || 'X';
+  }
+
+  isUserSeat(seatName: string): boolean {
+    return this.bookingService.selectedSeats().some(s => s.id === seatName);
+  }
+
+  getSeatCellLabel(seat: Seat): string {
+    return seat.code === 'X' ? '×' : seat.seatName;
+  }
+
+  getSeatTooltip(seat: Seat): string {
+    if (seat.code === 'X') {
+      return `Not available — row ${seat.row}`;
+    }
+    const seatType = this.getSeatTypeByCode(seat.code);
+    return `₹${seat.price} — ${seat.seatName} (${seatType?.name ?? seat.code})`;
+  }
+
+  getSeatAriaLabel(seat: Seat): string {
+    if (seat.code === 'X') {
+      return `Unavailable, row ${seat.row}`;
+    }
+    const seatType = this.getSeatTypeByCode(seat.code);
+    return `Seat ${seat.seatName}, ${seatType?.name ?? seat.code}, ₹${seat.price}.`;
+  }
+
+  getSeatClass(seat: BookingSeat): string {
     const selectedSeats = this.bookingService.selectedSeats();
     const isSelected = selectedSeats.some(s => s.id === seat.id);
 
@@ -432,7 +702,7 @@ export class BookingComponent implements OnInit {
     }
   }
 
-  toggleSeat(seat: Seat): void {
+  toggleSeat(seat: BookingSeat): void {
     this.bookingService.toggleSeatSelection(seat);
   }
 
@@ -464,12 +734,13 @@ export class BookingComponent implements OnInit {
     if (!paymentMethod) return;
 
     try {
-      const booking = await this.bookingService.confirmBooking(paymentMethod);
+      const booking = await this.bookingService.confirmBooking(paymentMethod, this.showtimeId());
       this.confirmedBookingId.set(booking.id);
       this.currentStep.set(3);
       this.toastService.success('Booking Confirmed!', 'Your tickets have been booked successfully.');
-    } catch (error) {
-      this.toastService.error('Payment Failed', 'Please try again.');
+    } catch (error: any) {
+      const errorMessage = error?.message || 'Please try again.';
+      this.toastService.error('Payment Failed', errorMessage);
     }
   }
 }

@@ -12,6 +12,37 @@
         </ol>
       </nav>
 
+      <!-- Booking Summary from Movie Detail -->
+      @if (bookingService.currentBooking() && bookingService.selectedSeats().length > 0) {
+        <div class="bg-dark-800 border border-primary-500/30 rounded-lg p-4 mb-8">
+          <h3 class="text-lg font-semibold text-white mb-4">Your Selection Summary</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <p class="text-gray-400 text-sm">Movie</p>
+              <p class="font-medium text-white">{{ bookingService.currentBooking()?.movie?.title }}</p>
+            </div>
+            <div>
+              <p class="text-gray-400 text-sm">Showtime Details</p>
+              <p class="font-medium text-white">{{ bookingService.currentBooking()?.showtime?.date }} | {{ bookingService.currentBooking()?.showtime?.time }}</p>
+            </div>
+            <div>
+              <p class="text-gray-400 text-sm">Location</p>
+              <p class="font-medium text-white">{{ bookingService.currentBooking()?.showtime?.theater }} - {{ bookingService.currentBooking()?.showtime?.screen }}</p>
+            </div>
+            <div class="md:col-span-3">
+              <p class="text-gray-400 text-sm mb-2">Selected Seats</p>
+              <div class="flex flex-wrap gap-2">
+                @for (seat of bookingService.selectedSeats(); track seat.id) {
+                  <span class="bg-primary-500/20 text-primary-300 px-3 py-1 rounded-full text-sm border border-primary-500/50">
+                    {{ seat.id }} (₹{{ seat.price }})
+                  </span>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
       <!-- Progress Steps -->
       <div class="flex items-center justify-center mb-12">
         <div class="flex items-center space-x-4">
@@ -51,97 +82,118 @@
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Main Content -->
         <div class="lg:col-span-2">
-          <!-- Step 1: Seat Selection -->
+          <!-- Step 1: Seats Summary (Read-only) -->
           @if (currentStep() === 1) {
             <div class="card p-6 animate-fade-in">
-              <h2 class="text-xl font-semibold text-white mb-6">Select Your Seats</h2>
+              <h2 class="text-xl font-semibold text-white mb-6">Your Selected Seats</h2>
 
-              <!-- Screen -->
-              <div class="relative mb-8">
-                <div class="h-2 bg-gradient-to-r from-transparent via-primary-500 to-transparent rounded-full mb-2"></div>
-                <div class="text-center text-sm text-gray-400">SCREEN</div>
-              </div>
+              @if (bookingService.selectedSeats().length > 0) {
+                <div class="space-y-8">
+                  <!-- Seat Layout Grid (Read-only & Disabled) -->
+                  <div class="overflow-x-auto">
+                    <div class="inline-block min-w-full bg-dark-800/30 p-6 rounded-lg">
+                      <!-- Screen -->
+                      <div class="cinema-screen">
+                        <div class="cinema-screen__ambient" aria-hidden="true"></div>
+                        <div class="cinema-screen__hull">
+                          <div class="cinema-screen__surface" aria-hidden="true"></div>
+                          <div class="cinema-screen__spill" aria-hidden="true"></div>
+                          <p class="cinema-screen__caption">Screen</p>
+                        </div>
+                      </div>
 
-              <!-- Seat Legend -->
-              <div class="flex flex-wrap justify-center gap-6 mb-8 text-sm">
-                <div class="flex items-center space-x-2">
-                  <div class="w-6 h-6 rounded bg-dark-600 border border-dark-500"></div>
-                  <span class="text-gray-400">Available</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                  <div class="w-6 h-6 rounded bg-primary-500"></div>
-                  <span class="text-gray-400">Selected</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                  <div class="w-6 h-6 rounded bg-dark-800"></div>
-                  <span class="text-gray-400">Sold</span>
-                </div>
-              </div>
+                      <!-- Seats Grid - Grouped by Row (Read-only Display) -->
+                      <div class="space-y-2">
+                        @for (rowGroup of getSelectedSeatsGroupedByRow(); track rowGroup.row) {
+                          <div class="flex justify-center gap-2">
+                            <!-- Row Label -->
+                            <div class="w-6 flex items-center justify-center text-xs font-bold text-gray-500">
+                              {{ rowGroup.row }}
+                            </div>
 
-              <!-- Seat Types Info -->
-              <div class="flex flex-wrap justify-center gap-6 mb-8 text-sm">
-                <div class="flex items-center space-x-2">
-                  <div class="w-6 h-6 rounded bg-green-500/20 border border-green-500/50"></div>
-                  <span class="text-gray-400">Standard (₹200)</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                  <div class="w-6 h-6 rounded bg-blue-500/20 border border-blue-500/50"></div>
-                  <span class="text-gray-400">Premium (₹300)</span>
-                </div>
-                <div class="flex items-center space-x-2">
-                  <div class="w-6 h-6 rounded bg-yellow-500/20 border border-yellow-500/50"></div>
-                  <span class="text-gray-400">VIP (₹450)</span>
-                </div>
-              </div>
+                            <!-- Seats in Row (Disabled/Read-only) -->
+                            @for (seat of rowGroup.seats; track seat.id) {
+                              <div
+                                disabled
+                                class="w-8 h-8 rounded text-xs font-bold transition-all text-white border cursor-default ring-4 ring-red-500 scale-125 origin-center"
+                                [ngClass]="{
+                                  'bg-yellow-500 border-yellow-600': seat.type === 'vip',
+                                  'bg-blue-500 border-blue-600': seat.type === 'premium',
+                                  'bg-green-500 border-green-600': seat.type === 'standard'
+                                }"
+                                [title]="'₹' + seat.price + ' - ' + seat.seatName"
+                              >
+                                {{ seat.seatName }}
+                              </div>
+                            }
 
-              <!-- Seat Grid -->
-              <div class="overflow-x-auto">
-                <div class="min-w-[500px] flex flex-col items-center space-y-2">
-                  @for (row of groupedSeats(); track row.row) {
-                    <div class="flex items-center space-x-2">
-                      <span class="w-6 text-center text-sm font-medium text-gray-400">{{ row.row }}</span>
-                      <div class="flex space-x-2">
-                        @for (seat of row.seats; track seat.id; let i = $index) {
-                          @if (i === 6) {
-                            <div class="w-4"></div>
-                          }
-                          <button (click)="toggleSeat(seat)"
-                                  [disabled]="!seat.isAvailable"
-                                  class="w-8 h-8 rounded text-xs font-medium transition-all duration-200 disabled:cursor-not-allowed"
-                                  [class]="getSeatClass(seat)">
-                            {{ seat.number }}
-                          </button>
+                            <!-- Row Label (End) -->
+                            <div class="w-6 flex items-center justify-center text-xs font-bold text-gray-500">
+                              {{ rowGroup.row }}
+                            </div>
+                          </div>
                         }
                       </div>
-                      <span class="w-6 text-center text-sm font-medium text-gray-400">{{ row.row }}</span>
                     </div>
-                  }
-                </div>
-              </div>
+                  </div>
 
-              <!-- Selected Seats Summary -->
-              @if (bookingService.selectedSeats().length > 0) {
-                <div class="mt-8 p-4 bg-dark-800 rounded-lg">
-                  <div class="flex items-center justify-between">
-                    <div>
-                      <span class="text-gray-400">Selected Seats: </span>
-                      <span class="text-white font-medium">{{ formatSelectedSeats() }}</span>
+                  <!-- Selected Seats Summary Card -->
+                  <div class="bg-dark-800/50 p-4 rounded-lg border border-primary-500/30">
+                    <p class="text-sm font-semibold text-gray-300 mb-4">Selected Seats ({{ bookingService.selectedSeats().length }}):</p>
+                    <div class="flex flex-wrap gap-2">
+                      @for (seat of bookingService.selectedSeats(); track seat.id) {
+                        <div class="flex items-center space-x-2 bg-dark-700 px-3 py-2 rounded-full border border-primary-500/50">
+                          <div class="w-5 h-5 rounded flex items-center justify-center text-xs font-bold text-white"
+                            [ngClass]="{
+                              'bg-yellow-500': seat.type === 'vip',
+                              'bg-blue-500': seat.type === 'premium',
+                              'bg-green-500': seat.type === 'standard'
+                            }">
+                            {{ seat.type.charAt(0).toUpperCase() }}
+                          </div>
+                          <span class="text-gray-200 text-sm font-medium">{{ seat.seatName }}</span>
+                          <span class="text-gray-400 text-xs">₹{{ seat.price }}</span>
+                        </div>
+                      }
                     </div>
-                    <button (click)="bookingService.clearSelectedSeats()" class="text-red-400 hover:text-red-300 text-sm">
-                      Clear All
+                  </div>
+
+                  <!-- Price Breakdown -->
+                  <div class="bg-dark-800/50 p-4 rounded-lg border border-dark-700">
+                    <p class="text-sm font-semibold text-gray-300 mb-4">Price Breakdown:</p>
+                    <div class="space-y-2 text-sm">
+                      <div class="flex justify-between">
+                        <span class="text-gray-400">Subtotal ({{ bookingService.selectedSeats().length }} seats):</span>
+                        <span class="text-white font-medium">₹{{ bookingService.totalAmount() }}</span>
+                      </div>
+                      <div class="flex justify-between">
+                        <span class="text-gray-400">Convenience Fee (5%):</span>
+                        <span class="text-white font-medium">₹{{ bookingService.convenienceFee() }}</span>
+                      </div>
+                      <div class="flex justify-between">
+                        <span class="text-gray-400">Taxes (13%):</span>
+                        <span class="text-white font-medium">₹{{ bookingService.taxes() }}</span>
+                      </div>
+                      <div class="border-t border-dark-600 pt-2 mt-2 flex justify-between">
+                        <span class="text-gray-300 font-semibold">Grand Total:</span>
+                        <span class="text-primary-400 font-bold text-lg">₹{{ bookingService.grandTotal() }}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Continue Button -->
+                  <div class="flex justify-end">
+                    <button (click)="nextStep()"
+                            class="btn-primary py-3 px-8">
+                      Proceed to Payment
                     </button>
                   </div>
                 </div>
+              } @else {
+                <div class="text-center py-8">
+                  <p class="text-gray-400">No seats selected. Please go back to select seats.</p>
+                </div>
               }
-
-              <!-- Continue Button -->
-              <div class="mt-8 flex justify-end">
-                <button (click)="nextStep()"
-                        [disabled]="bookingService.selectedSeats().length === 0"
-                        class="btn-primary py-3 px-8 disabled:opacity-50 disabled:cursor-not-allowed">
-                  Continue to Payment
-                </button>
-              </div>
             </div>
           }
 

@@ -30,14 +30,116 @@ export interface StarCast {
   artistType?: ArtistType | null;
 }
 
-// Showtime interface
+// Screen interface
+export interface Screen {
+  id: string;
+  title: string;
+}
+
+// Theater interface for showtime
+export interface TheaterDetail {
+  id: string;
+  name: string;
+}
+
+// Showtime interface - for listing showtimes
 export interface Showtime {
   id: string;
-  time: string;
-  date: Date;
-  theater: string;
+  movieId: string;
+  showDate: string; // ISO format YYYY-MM-DD
+  showTime: string; // HH:MM format
+  theater: TheaterDetail;
+  screen: Screen;
+  statusCode: string; // 'AV' for available
+}
+
+// Seat in seat layout
+export interface Seat {
+  seatName: string;
+  row: string;
+  col: number;
+  code: string; // 'V' for VIP, 'P' for premium, 'R' for regular, 'X' for not available
   price: number;
-  available: boolean;
+}
+
+// Price layout info
+export interface PriceLayout {
+  code: string;
+  basePrice: number;
+}
+
+// Seat type from API
+export interface SeatType {
+  id: string;
+  code: string; // 'V', 'P', 'R', 'X'
+  name: string; // 'VIP', 'Premium', 'Regular', 'Aisle'
+  color: string; // Hex color code (e.g., '#57e389')
+  description?: string;
+  isActive: boolean;
+}
+
+// Showtime detail response with seat layout
+export interface ShowtimeDetail {
+  showTime: string;
+  format: string; // '2D', '3D', etc.
+  movieId: string;
+  language: string; // 'ENG', 'HIN', etc.
+  isActive: boolean;
+  showDate: string;
+  seatLayout: Seat[];
+  screenId: string;
+  createdAt: number;
+  deletedAt: null | number;
+  pricePerLayout: PriceLayout[];
+  theatreId: string;
+  statusCode: string;
+  updatedAt: number;
+  id: string;
+}
+
+// Response for showtimes list
+export interface ShowtimesListResponse {
+  success: boolean;
+  message: Array<any> | null;
+  data: Showtime[];
+  page: number;
+  size: number;
+  totalPages: number;
+  totalElements: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
+}
+
+// Response for showtime detail
+export interface ShowtimeDetailResponse {
+  success: boolean;
+  message: string;
+  data: ShowtimeDetail;
+  timestamp: string;
+}
+
+/** Seat line inside POST /public/showtimes/:id/bookings payload */
+export interface PublicBookingSeatDetail {
+  seatName: string;
+  row: string;
+  col: number;
+  seatCode: string;
+  seatPrice: number;
+  seatStatusCode: number;
+}
+
+/** One booking aggregate for a showtime (may be in progress or completed) */
+export interface PublicShowtimeBooking {
+  paymentStatus: string;
+  bookingDetails: PublicBookingSeatDetail[];
+  createdAt: number[] | string;
+}
+
+export interface PublicShowtimeBookingsResponse {
+  success: boolean;
+  message: string;
+  data: PublicShowtimeBooking[];
+  timestamp?: string;
 }
 
 // Movie interface - matches API response structure
@@ -88,4 +190,11 @@ export interface Theater {
   name: string;
   location: string;
   facilities: string[];
+}
+
+// Response for seat types API
+export interface SeatTypesResponse {
+  success: boolean;
+  message: string;
+  data: SeatType[];
 }
