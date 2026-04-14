@@ -103,7 +103,41 @@ export interface BookingDetailApiResponse {
   seatStatusName?: string;
   seatStatusColor?: string;
 }
+// ─── Smart Seat Suggestion API Models ─────────────────────────────────────────
 
+export type SeatPreference = 'FRONT' | 'MIDDLE' | 'BACK';
+
+/** Individual seat in a suggestion */
+export interface SuggestedSeat {
+  seatNumber: string;
+  row: string;
+  column: number;
+  seatType: string;
+  price: number;
+}
+
+/** A single suggestion (ranked by score) */
+export interface SeatSuggestion {
+  rank: number;
+  row: string;
+  startCol: number;
+  endCol: number;
+  score: number;
+  seats: SuggestedSeat[];
+  totalPrice: number;
+}
+
+/** Response from POST /public/showtimes/suggest-seats */
+export interface SmartSeatSuggestionResponse {
+  success: boolean;
+  message: string;
+  data: {
+    showtimeId: string;
+    requestedSeats: number;
+    suggestions: SeatSuggestion[];
+  };
+  timestamp: string;
+}
 /** Full booking record returned by GET /customer/bookings or verify endpoints */
 export interface BookingApiResponse {
   id: string;

@@ -5,3 +5,4 @@ export * from './login-modal/login-modal.component';
 export * from './signup-modal/signup-modal.component';
 export * from './signup-success-modal/signup-success-modal.component';
 export * from './toast/toast.component';
+export * from './smart-seat-selector/smart-seat-selector.component';

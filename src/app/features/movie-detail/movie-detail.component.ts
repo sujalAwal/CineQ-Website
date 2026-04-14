@@ -18,11 +18,12 @@ import {
   PublicShowtimeBookingsResponse
 } from '../../core/models/movie.model';
 import { MovieCardComponent } from '../../shared/components/movie-card/movie-card.component';
+import { SmartSeatSelectorComponent } from '../../shared/components/smart-seat-selector/smart-seat-selector.component';
 
 @Component({
   selector: 'app-movie-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, MovieCardComponent],
+  imports: [CommonModule, RouterLink, MovieCardComponent, SmartSeatSelectorComponent],
   template: `
     @if (loading()) {
       <div class="min-h-screen bg-dark-950 flex items-center justify-center">
@@ -277,9 +278,9 @@ import { MovieCardComponent } from '../../shared/components/movie-card/movie-car
               </div>
             } @else {
               <div class="space-y-8">
-                <!-- Step 1: Select Date -->
+                <!-- Select Date -->
                 <div>
-                  <h3 class="text-lg font-semibold text-white mb-4">Step 1: Choose Date</h3>
+                  <h3 class="text-lg font-semibold text-white mb-4">Select Date</h3>
                   <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                     @for (date of uniqueDates(); track date) {
                       <button 
@@ -297,10 +298,10 @@ import { MovieCardComponent } from '../../shared/components/movie-card/movie-car
                   </div>
                 </div>
 
-                <!-- Step 2: Select Theater (shows if date is selected) -->
+                <!-- Pick a Cinema-->
                 @if (selectedDate()) {
                   <div>
-                    <h3 class="text-lg font-semibold text-white mb-4">Step 2: Choose Theater</h3>
+                    <h3 class="text-lg font-semibold text-white mb-4">Pick a Cinema </h3>
                     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                       @for (theater of theatersForSelectedDate(); track theater.id) {
                         <button 
@@ -321,10 +322,10 @@ import { MovieCardComponent } from '../../shared/components/movie-card/movie-car
                   </div>
                 }
 
-                <!-- Step 3: Select Screen (shows if theater is selected) -->
+                <!-- Step 3: Select Available Showtimes Screen (shows if theater is selected) -->
                 @if (selectedTheater()) {
                   <div>
-                    <h3 class="text-lg font-semibold text-white mb-4">Step 3: Choose Screen & Showtime</h3>
+                    <h3 class="text-lg font-semibold text-white mb-4">Available Showtimes</h3>
                     <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
                       @for (screen of screensForSelectedTheater(); track screen.id) {
                         <button 
@@ -356,10 +357,21 @@ import { MovieCardComponent } from '../../shared/components/movie-card/movie-car
         @if (selectedScreen()) {
           <section class="py-12 bg-dark-900 border-t border-dark-800">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <h2 class="section-title flex items-center space-x-3 mb-8">
-                <span class="w-1 h-8 bg-primary-500 rounded-full"></span>
-                <span>Select Your Seats</span>
-              </h2>
+              <div class="flex justify-between items-center mb-8">
+                <h2 class="section-title flex items-center space-x-3">
+                  <span class="w-1 h-8 bg-primary-500 rounded-full"></span>
+                  <span>Select Your Seats</span>
+                </h2>
+                <button 
+                  (click)="openSmartSeatSelector()"
+                  class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold transition-colors flex items-center space-x-2"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                  </svg>
+                  <span>Smart Selection</span>
+                </button>
+              </div>
 
               @if (seatsLoading()) {
                 <div class="flex justify-center py-12">
@@ -546,6 +558,15 @@ import { MovieCardComponent } from '../../shared/components/movie-card/movie-car
           </div>
         </section>
       }
+
+      <!-- Smart Seat Selector Modal -->
+      @if (showSmartSeatSelector() && selectedScreen()) {
+        <app-smart-seat-selector
+          [showtimeId]="selectedScreen()!.id"
+          (seatsSelected)="onSmartSeatSelection($event)"
+          (closed)="closeSmartSeatSelector()"
+        ></app-smart-seat-selector>
+      }
     }
   `,
   styles: [`
@@ -585,6 +606,7 @@ export class MovieDetailComponent implements OnInit {
   seatTypes = signal<SeatType[]>([]);
   selectedSeats = signal<string[]>([]);
   seatsLoading = signal(false);
+  showSmartSeatSelector = signal(false);
 
   // Computed: Get unique dates from showtimes
   uniqueDates = computed(() => {
@@ -630,6 +652,9 @@ export class MovieDetailComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    // Scroll to top when navigating to movie detail page
+    window.scrollTo(0, 0);
+    
     // Load seat types on component init
     this.loadSeatTypes();
     
@@ -942,6 +967,21 @@ export class MovieDetailComponent implements OnInit {
         movieId: movie.id
       }
     });
+  }
+
+  openSmartSeatSelector(): void {
+    this.showSmartSeatSelector.set(true);
+  }
+
+  closeSmartSeatSelector(): void {
+    this.showSmartSeatSelector.set(false);
+  }
+
+  onSmartSeatSelection(seatNames: string[]): void {
+    // Auto-select the suggested seats
+    this.selectedSeats.set(seatNames);
+    this.closeSmartSeatSelector();
+    this.toastService.success('Seats Selected', `${seatNames.length} seats have been automatically selected`);
   }
 }
 

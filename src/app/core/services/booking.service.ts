@@ -7,7 +7,9 @@ import {
   ApiPaymentMethod,
   InitiatePaymentApiRequest,
   InitiatePaymentApiResponseData,
-  BookingApiResponse
+  BookingApiResponse,
+  SmartSeatSuggestionResponse,
+  SeatPreference
 } from '../models/booking.model';
 import { Movie, Showtime } from '../models/movie.model';
 import { HttpClient } from '@angular/common/http';
@@ -346,5 +348,36 @@ export class BookingService {
 
     document.body.appendChild(form);
     form.submit();
+  }
+
+  /**
+   * Get AI-suggested seats based on the number of seats and preference
+   */
+  async getSmartSeatSuggestions(
+    showtimeId: string,
+    seats: number,
+    seatPreference?: SeatPreference
+  ): Promise<SmartSeatSuggestionResponse> {
+    const payload: any = {
+      showtimeId,
+      seats: seats.toString()
+    };
+
+    if (seatPreference) {
+      payload.seatPreference = seatPreference;
+    }
+
+    const response = await firstValueFrom(
+      this.http.post<SmartSeatSuggestionResponse>(
+        `${environment.api.baseUrl}/public/showtimes/suggest-seats`,
+        payload
+      )
+    );
+
+    if (!response.success) {
+      throw new Error(response.message || 'Failed to get seat suggestions');
+    }
+
+    return response;
   }
 }
