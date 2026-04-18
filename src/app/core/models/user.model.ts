@@ -54,6 +54,8 @@ export interface AuthResponse {
   loyaltyPoints: number;
   isEmailVerified: boolean;
   role: string;
+  profilePicture?: string | null;
+  avatarUrl?: string | null;
 }
 
 export interface ApiErrorResponse {

@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, ElementRef, ViewChild, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -34,19 +34,49 @@ import { User, getUserFullName } from '../../core/models/user.model';
                     class="w-32 h-32 rounded-full border-4 border-primary-500 object-cover mx-auto"
                   >
                   <button 
-                    class="absolute bottom-0 right-0 p-2 bg-primary-600 rounded-full hover:bg-primary-700 transition-colors"
+                    class="absolute bottom-0 right-0 p-2 bg-primary-600 rounded-full hover:bg-primary-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                     aria-label="Change avatar"
                     (click)="changeAvatar()"
+                    [disabled]="isAvatarUploading()"
                   >
-                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
-                    </svg>
+                    @if (isAvatarUploading()) {
+                      <svg class="w-4 h-4 text-white animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                      </svg>
+                    } @else {
+                      <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      </svg>
+                    }
                   </button>
+                  <input
+                    #avatarInput
+                    type="file"
+                    accept="image/*"
+                    class="hidden"
+                    (change)="onAvatarFileSelected($event)"
+                  >
                 </div>
 
                 <h2 class="text-xl font-bold text-white mb-1">{{ userDisplayName }}</h2>
                 <p class="text-gray-400 text-sm mb-4">{{ user()?.email }}</p>
+
+                @if (isAvatarUploading()) {
+                  <p class="text-primary-400 text-xs mb-4">Uploading profile picture...</p>
+                }
+
+                @if (hasCustomAvatar()) {
+                  <button
+                    type="button"
+                    (click)="deleteAvatar()"
+                    [disabled]="isAvatarUploading()"
+                    class="text-sm text-red-400 hover:text-red-300 transition-colors mb-4 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    Remove Photo
+                  </button>
+                }
 
                 <!-- Member Since -->
                 <div class="bg-dark-800 rounded-lg p-3 mb-4">
@@ -299,9 +329,12 @@ import { User, getUserFullName } from '../../core/models/user.model';
 export class ProfileComponent {
   private authService = inject(AuthService);
   private toastService = inject(ToastService);
+  @ViewChild('avatarInput') private avatarInput?: ElementRef<HTMLInputElement>;
 
   readonly user = this.authService.user;
   readonly defaultAvatar = 'https://api.dicebear.com/7.x/avataaars/svg?seed=default';
+  readonly isAvatarUploading = signal(false);
+  private readonly maxProfilePictureSizeBytes = 5 * 1024 * 1024;
 
   get userDisplayName(): string {
     return getUserFullName(this.user());
@@ -355,9 +388,69 @@ export class ProfileComponent {
     }
   }
 
+  hasCustomAvatar(): boolean {
+    return !!this.user()?.avatarUrl;
+  }
+
   changeAvatar(): void {
-    // TODO: Implement avatar upload
-    this.toastService.info('Coming Soon', 'Avatar upload will be available soon.');
+    if (this.isAvatarUploading()) {
+      return;
+    }
+
+    this.avatarInput?.nativeElement.click();
+  }
+
+  async onAvatarFileSelected(event: Event): Promise<void> {
+    const inputElement = event.target as HTMLInputElement | null;
+    const selectedFile = inputElement?.files?.[0];
+
+    if (!selectedFile) {
+      return;
+    }
+
+    if (!selectedFile.type.startsWith('image/')) {
+      this.toastService.error('Invalid File', 'Please choose a valid image file.');
+      inputElement.value = '';
+      return;
+    }
+
+    if (selectedFile.size > this.maxProfilePictureSizeBytes) {
+      this.toastService.error('File Too Large', 'Please upload an image smaller than 5MB.');
+      inputElement.value = '';
+      return;
+    }
+
+    this.isAvatarUploading.set(true);
+
+    try {
+      await this.authService.uploadProfilePicture(selectedFile);
+      this.toastService.success('Profile Picture Updated', 'Your profile picture has been updated successfully.');
+    } catch {
+      // Error toast is handled in AuthService.
+    } finally {
+      this.isAvatarUploading.set(false);
+      inputElement.value = '';
+    }
+  }
+
+  async deleteAvatar(): Promise<void> {
+    if (this.isAvatarUploading()) {
+      return;
+    }
+
+    this.isAvatarUploading.set(true);
+
+    try {
+      await this.authService.deleteProfilePicture();
+      this.toastService.success('Profile Picture Removed', 'Your profile picture has been removed.');
+    } catch {
+      // Error toast is handled in AuthService.
+    } finally {
+      this.isAvatarUploading.set(false);
+      if (this.avatarInput?.nativeElement) {
+        this.avatarInput.nativeElement.value = '';
+      }
+    }
   }
 
   changePassword(): void {

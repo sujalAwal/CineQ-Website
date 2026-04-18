@@ -310,12 +310,51 @@ export class AuthService {
     }
   }
 
+  /**
+   * Upload profile picture for the current user
+   */
+  async uploadProfilePicture(file: File): Promise<string> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await firstValueFrom(
+        this.http.post<ApiSuccessResponse<{ profilePicture: string }>>(`${AUTH_BASE_URL}/profile-picture`, formData)
+      );
+
+      const profilePictureUrl = response.data?.profilePicture || '';
+      this.updateProfilePictureInCache(profilePictureUrl || null);
+      return profilePictureUrl;
+    } catch (error) {
+      this.handleAuthError(error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete profile picture for the current user
+   */
+  async deleteProfilePicture(): Promise<void> {
+    try {
+      const response = await firstValueFrom(
+        this.http.delete<ApiSuccessResponse<{ profilePicture: string | null }>>(`${AUTH_BASE_URL}/profile-picture`)
+      );
+
+      this.updateProfilePictureInCache(response.data?.profilePicture ?? null);
+    } catch (error) {
+      this.handleAuthError(error);
+      throw error;
+    }
+  }
+
   // ──────────────────────────── Helpers ────────────────────────────
 
   /**
    * Map the login AuthResponse to our User model
    */
   private mapAuthResponseToUser(response: AuthResponse): User {
+    const profilePicture = response.profilePicture ?? response.avatarUrl ?? null;
+
     return {
       id: response.id,
       firstName: response.firstName,
@@ -325,9 +364,24 @@ export class AuthService {
       loyaltyPoints: response.loyaltyPoints ?? 0,
       isEmailVerified: response.isEmailVerified ?? false,
       role: response.role ?? 'NA',
-      avatarUrl: `https://api.dicebear.com/7.x/avataaars/svg?seed=${response.email}`,
+      avatarUrl: profilePicture || undefined,
       createdAt: new Date()
     };
+  }
+
+  /**
+   * Keep cached user profile picture in sync after upload/delete actions.
+   */
+  private updateProfilePictureInCache(profilePictureUrl: string | null): void {
+    const currentUser = this.userSignal();
+    if (!currentUser) {
+      return;
+    }
+
+    this.updateUserData({
+      ...currentUser,
+      avatarUrl: profilePictureUrl || undefined
+    });
   }
 
   /**
