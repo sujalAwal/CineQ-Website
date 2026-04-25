@@ -55,8 +55,8 @@ import { SmartSeatSelectorComponent } from '../../shared/components/smart-seat-s
                  [alt]="movie()!.title"
                  class="w-full h-full object-cover">
           }
-          <div class="absolute inset-0 bg-gradient-to-r from-dark-950 via-dark-950/90 to-dark-950/50"></div>
-          <div class="absolute inset-0 bg-gradient-to-t from-dark-950 via-transparent to-dark-950/50"></div>
+          <div class="absolute inset-0 bg-gradient-to-r from-dark-950/70 via-dark-950/60 to-dark-950/20"></div>
+          <div class="absolute inset-0 bg-gradient-to-t from-dark-950/70 via-transparent to-dark-950/20"></div>
         </div>
 
         <!-- Content -->
@@ -138,6 +138,13 @@ import { SmartSeatSelectorComponent } from '../../shared/components/smart-seat-s
                     <span class="ml-2 badge badge-primary">{{ movie()!.certification }}</span>
                   </div>
                 }
+                      <!-- Director -->
+              @if (directorNames().length > 0) {
+                <div class="mb-6">
+                  <span class="text-gray-400">{{ directorNames().length > 1 ? 'Directors' : 'Director' }}:</span>
+                  <span class="text-white ml-2 font-medium">{{ directorNames().join(', ') }}</span>
+                </div>
+              }
                 @if (movie()?.formats?.length) {
                   <div>
                     <span class="text-gray-400">Formats:</span>
@@ -160,6 +167,8 @@ import { SmartSeatSelectorComponent } from '../../shared/components/smart-seat-s
                   <p class="text-gray-300 leading-relaxed">{{ movie()!.description }}</p>
                 </div>
               }
+
+          
 
               <!-- Action Buttons -->
               <div class="flex flex-wrap gap-4">
@@ -214,7 +223,7 @@ import { SmartSeatSelectorComponent } from '../../shared/components/smart-seat-s
       }
 
       <!-- Cast Section -->
-      @if (movie()?.starcast?.length) {
+      @if (castOnly().length > 0) {
         <section class="py-12 bg-dark-950">
           <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 class="section-title flex items-center space-x-3">
@@ -223,7 +232,7 @@ import { SmartSeatSelectorComponent } from '../../shared/components/smart-seat-s
             </h2>
 
             <div class="flex space-x-6 overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
-              @for (cast of movie()!.starcast; track cast.artistId) {
+              @for (cast of castOnly(); track cast.artistId) {
                 <div class="flex-shrink-0 w-32 text-center">
                   <!-- Avatar Circle -->
                   <div class="w-24 h-24 mx-auto mb-3 rounded-full overflow-hidden bg-dark-800 border-2 border-primary-500/30">
@@ -608,6 +617,22 @@ export class MovieDetailComponent implements OnInit {
   seatsLoading = signal(false);
   showSmartSeatSelector = signal(false);
 
+  // Computed: Extract director names from starcast
+  directorNames = computed(() => {
+    const starcast = this.movie()?.starcast;
+    if (!starcast) return [];
+    return starcast
+      .filter(c => c.artistType?.name === 'Director')
+      .map(c => c.artist.fullName);
+  });
+
+  // Computed: Cast members excluding directors
+  castOnly = computed(() => {
+    const starcast = this.movie()?.starcast;
+    if (!starcast) return [];
+    return starcast.filter(c => c.artistType?.name !== 'Director');
+  });
+
   // Computed: Get unique dates from showtimes
   uniqueDates = computed(() => {
     const dates = new Set<string>();
@@ -619,7 +644,7 @@ export class MovieDetailComponent implements OnInit {
   theatersForSelectedDate = computed(() => {
     const date = this.selectedDate();
     if (!date) return [];
-    
+
     const theaters = new Map<string, { id: string; name: string }>();
     this.showtimes()
       .filter(s => s.showDate === date)
@@ -628,7 +653,7 @@ export class MovieDetailComponent implements OnInit {
           theaters.set(s.theater.id, { id: s.theater.id, name: s.theater.name });
         }
       });
-    
+
     return Array.from(theaters.values());
   });
 
@@ -637,7 +662,7 @@ export class MovieDetailComponent implements OnInit {
     const date = this.selectedDate();
     const theaterId = this.selectedTheater();
     if (!date || !theaterId) return [];
-    
+
     const screens = new Map<string, Showtime>();
     this.showtimes()
       .filter(s => s.showDate === date && s.theater.id === theaterId)
@@ -647,17 +672,17 @@ export class MovieDetailComponent implements OnInit {
           screens.set(key, s);
         }
       });
-    
+
     return Array.from(screens.values());
   });
 
   ngOnInit(): void {
     // Scroll to top when navigating to movie detail page
     window.scrollTo(0, 0);
-    
+
     // Load seat types on component init
     this.loadSeatTypes();
-    
+
     this.route.params.subscribe(params => {
       const movieId = params['id'];
       if (movieId) {
@@ -782,7 +807,7 @@ export class MovieDetailComponent implements OnInit {
 
   toggleSeatSelection(seatName: string, code: string): void {
     if (code === 'X') return; // Can't select unavailable seats
-    
+
     this.selectedSeats.update(seats => {
       const index = seats.indexOf(seatName);
       if (index === -1) {
@@ -863,7 +888,7 @@ export class MovieDetailComponent implements OnInit {
   safeTrailerUrl(): SafeResourceUrl {
     const movie = this.movie();
     if (!movie?.trailerUrl) return '';
-    
+
     let trailerUrl = movie.trailerUrl;
     // Handle YouTube URLs - convert to embed format
     if (trailerUrl.includes('youtube.com') || trailerUrl.includes('youtu.be')) {
@@ -874,7 +899,7 @@ export class MovieDetailComponent implements OnInit {
         }
       }
     }
-    
+
     return this.sanitizer.bypassSecurityTrustResourceUrl(trailerUrl);
   }
 
@@ -892,10 +917,10 @@ export class MovieDetailComponent implements OnInit {
 
   formatDate(dateString: string | Date): string {
     const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
-    return date.toLocaleDateString('en-US', { 
+    return date.toLocaleDateString('en-US', {
       year: 'numeric',
-      month: 'long', 
-      day: 'numeric' 
+      month: 'long',
+      day: 'numeric'
     });
   }
 
@@ -929,20 +954,20 @@ export class MovieDetailComponent implements OnInit {
 
     // Store booking data in service
     this.bookingService.initBooking(movie, selectedScreen);
-    
+
     // Convert seatNames to BookingSeat format for the service
     const bookingSeats = selectedSeats.map(seatName => {
       const seat = this.seatLayout()?.seatLayout.find(s => s.seatName === seatName);
       // Parse seatName to extract row and col (e.g., 'A1' -> row: 'A', col: 1)
       const row = seat?.row || seatName.charAt(0);
       const number = seat?.col || parseInt(seatName.substring(1), 10) || 1;
-      
+
       // Map seat code to BookingSeat type
       let seatType: 'standard' | 'premium' | 'vip' = 'standard';
       if (seat?.code === 'V') seatType = 'vip';
       else if (seat?.code === 'P') seatType = 'premium';
       else seatType = 'standard';
-      
+
       return {
         id: seatName,
         seatName: seatName,
