@@ -5,6 +5,12 @@ export interface BannerButton {
   openInNewTab: boolean;
 }
 
+export interface DisplayConfig {
+  showTitle: boolean;
+  showDescription: boolean;
+  showButtons: boolean;
+}
+
 export interface Banner {
   id: string;
   title: string;
@@ -14,6 +20,7 @@ export interface Banner {
   imageAltText: string;
   order: number;
   buttons: BannerButton[];
+  displayConfig?: DisplayConfig;
 }
 
 export interface BannerApiResponse {
