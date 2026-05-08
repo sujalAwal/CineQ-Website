@@ -325,6 +325,7 @@ import { SmartSeatSelectorComponent } from '../../shared/components/smart-seat-s
                           [class.text-gray-300]="selectedTheater() !== theater.id"
                         >
                           <p class="text-sm font-medium">{{ theater.name }}</p>
+                           <p class="text-sm font-medium">{{ theater.address }}</p>
                         </button>
                       }
                     </div>
@@ -645,12 +646,12 @@ export class MovieDetailComponent implements OnInit {
     const date = this.selectedDate();
     if (!date) return [];
 
-    const theaters = new Map<string, { id: string; name: string }>();
+    const theaters = new Map<string, { id: string; name: string; address: string }>();
     this.showtimes()
       .filter(s => s.showDate === date)
       .forEach(s => {
         if (!theaters.has(s.theater.id)) {
-          theaters.set(s.theater.id, { id: s.theater.id, name: s.theater.name });
+          theaters.set(s.theater.id, { id: s.theater.id, name: s.theater.name , address: s.theater.address });
         }
       });
 

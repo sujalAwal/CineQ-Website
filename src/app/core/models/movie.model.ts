@@ -40,6 +40,7 @@ export interface Screen {
 export interface TheaterDetail {
   id: string;
   name: string;
+  address: string;
 }
 
 // Showtime interface - for listing showtimes
