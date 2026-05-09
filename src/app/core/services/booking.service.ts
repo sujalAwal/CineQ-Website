@@ -39,7 +39,7 @@ export class BookingService {
   });
 
   readonly convenienceFee = computed(() => {
-    return Math.round(this.totalAmount() * 0.05); // 5% convenience fee
+    return Math.round(this.totalAmount() * 0); // 5% convenience fee
   });
 
   readonly taxes = computed(() => {
@@ -47,7 +47,7 @@ export class BookingService {
   });
 
   readonly grandTotal = computed(() => {
-    return this.totalAmount() + this.convenienceFee() + this.taxes();
+    return this.totalAmount();
   });
 
   // Available payment methods (Nepali payment service providers)

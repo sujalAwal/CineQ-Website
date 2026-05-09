@@ -484,10 +484,7 @@ import { Seat, SeatType, ShowtimeDetail, PublicShowtimeBookingsResponse } from '
                       <span class="text-gray-400">Convenience Fee</span>
                       <span class="text-white">₹{{ bookingService.convenienceFee() }}</span>
                     </div>
-                    <div class="flex justify-between text-sm">
-                      <span class="text-gray-400">GST (18%)</span>
-                      <span class="text-white">₹{{ bookingService.taxes() }}</span>
-                    </div>
+                 
                   </div>
 
                   <!-- Total -->

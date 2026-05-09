@@ -812,6 +812,11 @@ export class MovieDetailComponent implements OnInit {
     this.selectedSeats.update(seats => {
       const index = seats.indexOf(seatName);
       if (index === -1) {
+        // Only add new seat if less than 5 are already selected
+        if (seats.length >= 5) {
+          this.toastService.warning('Seat Limit Reached', 'Maximum 5 seats can be selected at a time');
+          return seats;
+        }
         return [...seats, seatName].sort();
       } else {
         return seats.filter(s => s !== seatName);

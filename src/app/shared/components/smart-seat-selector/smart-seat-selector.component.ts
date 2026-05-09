@@ -33,11 +33,10 @@ export class SmartSeatSelectorComponent {
     2: { label: '🏍️', emoji: '🏍️', description: 'Two Seats' },
     3: { label: '🚙', emoji: '🚙', description: 'Three Seats' },
     4: { label: '🚗', emoji: '🚗', description: 'Four Seats' },
-    5: { label: '🚙', emoji: '🚙', description: 'Five Seats' },
-    6: { label: '🚌', emoji: '🚌', description: 'Six Seats' }
+    5: { label: '🚙', emoji: '🚙', description: 'Five Seats' }
   };
 
-  readonly seatOptions = [2, 3, 4, 5, 6];
+  readonly seatOptions = [2, 3, 4, 5];
   readonly preferences: SeatPreference[] = ['FRONT', 'MIDDLE', 'BACK'];
 
   getVehicleIcon(seats: number) {
